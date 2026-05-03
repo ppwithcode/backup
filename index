@@ -1,0 +1,3904 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hexqine Translator ✦</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;600;700;900&family=Sarabun:wght@400;600;700&family=Prompt:wght@400;600;700&family=Kanit:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d0d0d;--surface:#161616;--surface2:#1f1f1f;
+    --border:#2a2a2a;--accent:#ff6b35;--accent2:#ffd23f;
+    --text:#f0f0f0;--text-dim:#888;--success:#4ade80;
+    --error:#f87171;--radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Noto Sans Thai',sans-serif;min-height:100vh;overflow:hidden;}
+
+  header{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:100;height:56px;}
+  .logo{display:flex;align-items:center;gap:10px;}
+  .logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 16px rgba(99,102,241,.5);}
+  .logo-text{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;letter-spacing:0.5px;}
+  .logo-text span{background:linear-gradient(135deg,#6366f1,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .header-right{display:flex;align-items:center;gap:10px;}
+  .server-badge{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--success);}
+  .dot-green{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 6px rgba(74,222,128,.6);}
+  .phase-badge{font-family:'Space Mono',monospace;font-size:10px;background:var(--surface2);border:1px solid var(--border);padding:3px 8px;border-radius:100px;color:var(--text-dim);}
+  .mode-indicator{font-family:'Space Mono',monospace;font-size:10px;padding:3px 8px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);}
+  .mode-indicator.draw{border-color:var(--accent);color:var(--accent);background:rgba(255,107,53,.1);}
+
+  .main{display:grid;grid-template-columns:240px 1fr 310px;height:calc(100vh - 56px);}
+
+  /* LEFT */
+  .panel{border-right:1px solid var(--border);overflow-y:auto;background:var(--surface);}
+  .panel-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:10;}
+  .panel-title{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);}
+  .upload-zone{margin:10px;border:2px dashed var(--border);border-radius:var(--radius);padding:18px 12px;text-align:center;cursor:pointer;transition:all .25s;position:relative;}
+  .upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:rgba(255,107,53,.05);}
+  .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+  .upload-icon{font-size:22px;margin-bottom:5px;}
+  .upload-text{font-size:11px;color:var(--text-dim);line-height:1.5;}
+  .upload-text strong{color:var(--accent);}
+  .pages-list{padding:0 10px 10px;display:flex;flex-direction:column;gap:6px;}
+  /* ========== MULTI-PAGE PANEL (floating) ========== */
+  .multi-page-list{
+    display:flex;flex-direction:column;gap:4px;
+    max-height:300px;overflow-y:auto;
+  }
+  .mp-page-row{
+    display:flex;align-items:center;gap:8px;
+    padding:6px 8px;border-radius:8px;
+    cursor:pointer;transition:background .15s;font-size:11px;
+  }
+  .mp-page-row:hover{ background:var(--surface2); }
+  .mp-page-row.active{ background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3); }
+  .mp-page-thumb{
+    width:32px;height:44px;object-fit:cover;
+    border-radius:4px;flex-shrink:0;background:var(--surface2);
+  }
+  .mp-page-info{ flex:1;min-width:0; }
+  .mp-page-name{
+    font-weight:600;color:var(--text);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    font-size:10px;margin-bottom:2px;
+  }
+  .mp-status-badge{
+    display:inline-flex;align-items:center;gap:3px;
+    font-size:9px;padding:1px 5px;border-radius:10px;font-weight:600;
+  }
+  .mp-status-badge.none{ background:rgba(255,255,255,0.06);color:var(--text-dim); }
+  .mp-status-badge.detected{ background:rgba(14,165,233,0.15);color:#0ea5e9; }
+  .mp-status-badge.translated{ background:rgba(16,185,129,0.15);color:#10b981; }
+  .mp-status-badge.error{ background:rgba(239,68,68,0.15);color:#ef4444; }
+  .page-thumb:hover{border-color:var(--border);}
+  .page-thumb.active{
+    border-color:var(--accent);
+    box-shadow:0 0 0 2px var(--accent),0 4px 12px rgba(99,102,241,0.4);
+  }
+  .page-thumb img{width:100%;display:block;max-height:110px;object-fit:cover;}
+  .page-thumb-info{padding:5px 8px;display:flex;justify-content:space-between;align-items:center;}
+  .page-num{font-family:'Space Mono',monospace;font-size:10px;color:var(--text-dim);}
+  .btn-delete{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:4px;transition:all .15s;}
+  .btn-delete:hover{color:var(--error);background:rgba(248,113,113,.1);}
+  .empty-state{padding:14px 10px;text-align:center;color:var(--text-dim);font-size:11px;line-height:1.6;}
+
+  /* CANVAS AREA */
+  .canvas-area{background:#0a0a0a;position:relative;overflow:hidden;}
+  .canvas-placeholder{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--text-dim);}
+  .canvas-placeholder .big-icon{font-size:48px;opacity:.2;margin-bottom:12px;}
+  .canvas-placeholder p{font-size:12px;opacity:.4;line-height:1.6;}
+
+  /* Zoom controls */
+  .zoom-controls{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;background:rgba(22,22,22,.9);border:1px solid var(--border);border-radius:100px;padding:6px 12px;z-index:50;backdrop-filter:blur(8px);}
+  .zoom-btn{background:none;border:none;color:var(--text);cursor:pointer;font-size:16px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+  .zoom-btn:hover{background:var(--surface2);color:var(--accent);}
+  .zoom-label{font-family:'Space Mono',monospace;font-size:11px;color:var(--text-dim);min-width:44px;text-align:center;}
+  .zoom-hint{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--text-dim);background:rgba(22,22,22,.8);padding:4px 10px;border-radius:100px;border:1px solid var(--border);white-space:nowrap;pointer-events:none;opacity:.7;}
+
+  /* Viewport (scrollable/pannable container) */
+  #viewport{position:absolute;inset:0;overflow:hidden;cursor:grab;}
+  #viewport.panning{cursor:grabbing;}
+  #viewport.draw-mode{cursor:crosshair;}
+
+  /* The transform wrapper */
+  #transform-wrap{position:absolute;transform-origin:0 0;will-change:transform;}
+
+  /* Image + boxes */
+  #canvas-container{position:relative;display:none;}
+  #base-img{display:block;user-select:none;pointer-events:none;}
+  #overlay-canvas{position:absolute;top:0;left:0;pointer-events:none;z-index:5;}
+  #selection-rect{position:absolute;border:2px dashed var(--accent);background:rgba(255,107,53,.08);pointer-events:none;display:none;border-radius:2px;}
+
+  /* Text Boxes */
+  .text-box-el{position:absolute;border:2px dashed rgba(255,107,53,.6);background:rgba(255,255,255,.92);border-radius:4px;cursor:move;min-width:50px;min-height:24px;display:flex;align-items:center;justify-content:center;padding:3px 5px;text-align:center;line-height:1.3;word-break:break-word;box-shadow:0 2px 8px rgba(0,0,0,.2);transition:all .15s;user-select:none;}
+  .text-box-el.selected{
+    border:2px solid #f97316;
+    border-style:solid;
+    box-shadow:0 0 0 3px rgba(249,115,22,0.5), 0 0 16px rgba(249,115,22,0.4), 0 2px 8px rgba(0,0,0,.3);
+    background:rgba(255,237,213,0.95);
+    z-index:100;
+  }
+  .text-box-el .resize-handle{position:absolute;bottom:-5px;right:-5px;width:10px;height:10px;background:var(--accent);border-radius:2px;cursor:se-resize;display:none;}
+  .text-box-el.selected .resize-handle{display:block;}
+  /* Corner handles — แสดงเฉพาะตอน selected */
+  .text-box-el .corner{position:absolute;width:8px;height:8px;background:var(--accent);border-radius:2px;display:none;z-index:10;}
+  .text-box-el.selected .corner{display:block;}
+  .text-box-el .corner.nw{top:-4px;left:-4px;cursor:nw-resize;}
+  .text-box-el .corner.ne{top:-4px;right:-4px;cursor:ne-resize;}
+  .text-box-el .corner.sw{bottom:-4px;left:-4px;cursor:sw-resize;}
+  .text-box-el .corner.se{bottom:-4px;right:-4px;cursor:se-resize;}
+  .text-box-el.marked{
+    border:2px solid #ef4444 !important;
+    box-shadow:0 0 0 3px rgba(239,68,68,0.5), 0 0 16px rgba(239,68,68,0.4) !important;
+    background:rgba(254,202,202,0.95) !important;
+  }
+  .text-box-el.marked::after{
+    content:'🗑️';
+    position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+    font-size:14px;pointer-events:none;
+  }width:16px;height:16px;background:var(--error);border-radius:50%;display:none;align-items:center;justify-content:center;font-size:10px;color:white;cursor:pointer;line-height:1;}
+  .text-box-el.selected .delete-btn{display:flex;}
+  /* bubble outer frame */
+  [id^="bubble-frame-"]{pointer-events:none;z-index:3;box-sizing:border-box;}
+
+  /* TOOLS */
+  .tools-panel{border-right:none;border-left:1px solid var(--border);overflow-y:auto;}
+  .tool-section{padding:10px 14px;border-bottom:1px solid var(--border);}
+  .tool-section-title{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px;}
+
+  .btn-primary{width:100%;padding:9px;background:var(--accent);border:none;border-radius:var(--radius);color:white;font-family:'Noto Sans Thai',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:6px;}
+  .btn-primary:hover:not(:disabled){background:#ff8555;transform:translateY(-1px);box-shadow:0 4px 16px rgba(255,107,53,.3);}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+  .btn-secondary{width:100%;padding:7px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:'Noto Sans Thai',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:6px;}
+  .btn-secondary:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+  .btn-secondary:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px;}
+  .btn-half{padding:7px 5px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Noto Sans Thai',sans-serif;font-size:11px;cursor:pointer;transition:all .2s;text-align:center;}
+  .btn-half:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+  .btn-half.active{border-color:var(--accent);background:rgba(255,107,53,.1);color:var(--accent);}
+
+  .text-label{font-size:11px;color:var(--text-dim);margin-bottom:4px;display:flex;align-items:center;gap:5px;}
+  .lang-tag{font-family:'Space Mono',monospace;font-size:9px;padding:1px 5px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);}
+  .text-box-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 9px;color:var(--text);font-family:'Noto Sans Thai',sans-serif;font-size:12px;line-height:1.6;resize:vertical;min-height:70px;outline:none;transition:border .2s;}
+  .text-box-input:focus{border-color:var(--accent);}
+  .text-box-input::placeholder{color:#444;}
+
+  .steps{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;}
+  .step{display:flex;align-items:center;gap:7px;padding:5px 9px;border-radius:8px;background:var(--surface2);font-size:11px;transition:all .3s;border:1px solid transparent;}
+  .step.active{background:rgba(255,107,53,.1);border-color:rgba(255,107,53,.2);}
+  .step.done{background:rgba(74,222,128,.07);border-color:rgba(74,222,128,.2);}
+  .step-icon{font-size:11px;width:15px;text-align:center;}
+  .step-name{flex:1;color:var(--text-dim);}
+  .step.active .step-name,.step.done .step-name{color:var(--text);}
+
+  .control-row{display:flex;align-items:center;gap:7px;margin-bottom:7px;}
+  .control-label{font-size:11px;color:var(--text-dim);white-space:nowrap;min-width:48px;}
+  select.ctrl{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px 7px;color:var(--text);font-family:'Noto Sans Thai',sans-serif;font-size:11px;outline:none;cursor:pointer;}
+  select.ctrl:focus{border-color:var(--accent);}
+  input[type=number].ctrl{width:55px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px 7px;color:var(--text);font-size:11px;outline:none;text-align:center;}
+  input[type=number].ctrl:focus{border-color:var(--accent);}
+  input[type=color].ctrl{width:32px;height:26px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px;cursor:pointer;}
+
+  .balloon-list{display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto;}
+  .balloon-item{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 9px;font-size:11px;cursor:pointer;transition:all .2s;}
+  .balloon-item:hover{border-color:var(--accent);}
+  .balloon-item .kr{color:var(--text-dim);margin-bottom:2px;font-size:10px;}
+  .balloon-item .th{color:var(--accent2);line-height:1.4;}
+
+  .export-row{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+  .btn-export{padding:7px 5px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Noto Sans Thai',sans-serif;font-size:11px;cursor:pointer;transition:all .2s;text-align:center;}
+  .btn-export:hover:not(:disabled){border-color:var(--accent2);color:var(--accent2);}
+  .btn-export:disabled{opacity:.3;cursor:not-allowed;}
+
+  .spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .6s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .toast{position:fixed;bottom:16px;right:16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:9px 13px;font-size:12px;z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);max-width:270px;}
+  .toast.show{transform:translateY(0);opacity:1;}
+  .toast.success{border-color:rgba(74,222,128,.4);}
+  .toast.error{border-color:rgba(248,113,113,.4);}
+  ::-webkit-scrollbar{width:3px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">✦</div>
+    <div class="logo-text">Hexqine <span>Translator</span></div>
+  </div>
+  <div class="header-right">
+    <div class="server-badge"><div class="dot-green"></div><span>API Key ปลอดภัย 🔒</span></div>
+    <!-- Translation Studio Button -->
+    <button onclick="toggleStudio()" id="btn-studio" title="Translation Studio (Ctrl+Shift+T)" style="
+      display:flex;align-items:center;gap:5px;
+      background:var(--surface2);border:1px solid var(--border);
+      border-radius:8px;padding:4px 10px;cursor:pointer;
+      font-size:11px;color:var(--text);transition:all .2s;
+      white-space:nowrap;
+    ">
+      <span>📜</span><span>Studio</span>
+    </button>
+    <div style="position:relative;display:inline-block;">
+      <button id="btn-model-selector" onclick="toggleModelDropdown()" style="
+        display:flex;align-items:center;gap:5px;
+        background:var(--surface2);border:1px solid var(--border);
+        border-radius:8px;padding:4px 10px;cursor:pointer;
+        font-size:11px;color:var(--text);transition:all .2s;
+        white-space:nowrap;
+      " title="เลือก Gemini Model">
+        <span style="font-size:13px;">✦</span>
+        <span id="model-badge-text">gemini-2.5-flash</span>
+        <span style="font-size:9px;opacity:0.6;">▼</span>
+      </button>
+      <!-- Dropdown -->
+      <div id="model-dropdown" style="
+        display:none;position:absolute;top:calc(100% + 6px);right:0;
+        background:var(--surface2);border:1px solid var(--border);
+        border-radius:10px;padding:6px;min-width:200px;
+        box-shadow:0 8px 24px rgba(0,0,0,0.3);z-index:9999;
+      ">
+        <div style="font-size:10px;color:var(--text-dim);padding:4px 8px 6px;border-bottom:1px solid var(--border);margin-bottom:4px;">
+          เลือก Gemini Model
+        </div>
+        <button onclick="selectModel('gemini-2.5-flash')" class="model-opt" id="mopt-gemini-2.5-flash" style="
+          width:100%;text-align:left;padding:7px 10px;border:none;border-radius:7px;
+          background:var(--accent);color:white;cursor:pointer;font-size:12px;
+          margin-bottom:3px;display:flex;align-items:center;gap:8px;
+        ">
+          <span>⚡</span>
+          <div>
+            <div style="font-weight:700;">gemini-2.5-flash</div>
+            <div style="font-size:10px;opacity:0.8;">แม่น · เสถียร · แนะนำ</div>
+          </div>
+        </button>
+        <button onclick="selectModel('gemini-2.5-flash-lite')" class="model-opt" id="mopt-gemini-2.5-flash-lite" style="
+          width:100%;text-align:left;padding:7px 10px;border:none;border-radius:7px;
+          background:transparent;color:var(--text);cursor:pointer;font-size:12px;
+          margin-bottom:3px;display:flex;align-items:center;gap:8px;
+        ">
+          <span>🚀</span>
+          <div>
+            <div style="font-weight:700;">gemini-2.5-flash-lite</div>
+            <div style="font-size:10px;opacity:0.6;">เร็วสุด · ถูกกว่า 3x · ลอง!</div>
+          </div>
+        </button>
+        <button onclick="selectModel('gemini-2.0-flash')" class="model-opt" id="mopt-gemini-2.0-flash" style="
+          width:100%;text-align:left;padding:7px 10px;border:none;border-radius:7px;
+          background:transparent;color:var(--text-dim);cursor:pointer;font-size:12px;
+          display:flex;align-items:center;gap:8px;opacity:0.6;
+        ">
+          <span>⚠️</span>
+          <div>
+            <div style="font-weight:700;">gemini-2.0-flash</div>
+            <div style="font-size:10px;">ปิดบริการ 1 มิ.ย. 2026</div>
+          </div>
+        </button>
+      </div>
+    </div>
+    <div class="mode-indicator" id="mode-indicator">เลือก</div>
+    <!-- Settings Gear Button -->
+    <button onclick="toggleSettingsPopup()" id="btn-settings" title="ตั้งค่า" style="
+      background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+      width:32px;height:32px;cursor:pointer;display:flex;align-items:center;
+      justify-content:center;font-size:16px;transition:all .2s;color:var(--text);
+    ">⚙️</button>
+  </div>
+</header>
+
+<!-- Settings Popup -->
+<div id="settings-popup" style="
+  display:none;position:fixed;top:64px;right:16px;width:320px;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:9999;overflow:hidden;
+">
+  <!-- Header -->
+  <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);">⚙️ ตั้งค่า</span>
+    <button onclick="toggleSettingsPopup()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;line-height:1;">✕</button>
+  </div>
+
+  <!-- Settings Content -->
+  <div style="padding:16px;display:flex;flex-direction:column;gap:16px;">
+
+    <!-- Font Default -->
+    <div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:1px;">🔠 ค่าเริ่มต้นฟอนต์</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:var(--text-dim);min-width:56px;">ฟอนต์</span>
+          <select id="setting-font" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-size:12px;">
+            <option value="Noto Sans Thai">Noto Sans Thai</option>
+            <option value="Sarabun">Sarabun</option>
+            <option value="Prompt">Prompt</option>
+            <option value="Kanit">Kanit</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:var(--text-dim);min-width:56px;">ขนาด</span>
+          <input type="number" id="setting-size" value="14" min="8" max="72" style="width:56px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-size:12px;">
+          <span style="font-size:11px;color:var(--text-dim);">px</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:var(--text-dim);min-width:56px;">สีข้อความ</span>
+          <input type="color" id="setting-color" value="#000000" style="width:32px;height:24px;border:1px solid var(--border);border-radius:4px;cursor:pointer;">
+          <span style="font-size:11px;color:var(--text-dim);margin-left:8px;">Stroke</span>
+          <input type="number" id="setting-stroke" value="0" min="0" max="10" style="width:44px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 6px;color:var(--text);font-size:12px;">
+          <input type="color" id="setting-stroke-color" value="#ffffff" style="width:32px;height:24px;border:1px solid var(--border);border-radius:4px;cursor:pointer;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Font Loader -->
+    <div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:1px;">📁 โหลดฟอนต์จาก PC</div>
+
+      <!-- Upload Button -->
+      <label style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px dashed var(--border);border-radius:8px;cursor:pointer;margin-bottom:8px;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span style="font-size:16px;">📂</span>
+        <div>
+          <div style="font-size:12px;color:var(--text);">เลือกไฟล์ฟอนต์</div>
+          <div style="font-size:10px;color:var(--text-dim);">.ttf · .otf · .woff · .woff2</div>
+        </div>
+        <input type="file" id="font-file-input" accept=".ttf,.otf,.woff,.woff2" multiple style="display:none;" onchange="loadCustomFonts(this.files)">
+      </label>
+
+      <!-- Font List -->
+      <div id="custom-font-list" style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;">
+        <div style="font-size:11px;color:var(--text-dim);text-align:center;padding:8px;">ยังไม่มีฟอนต์ที่โหลดครับ</div>
+      </div>
+    </div>
+
+    <!-- Inpaint Settings -->
+    <div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:1px;">🧹 Inpaint</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11px;color:var(--text-dim);min-width:56px;">Context</span>
+        <input type="number" id="setting-context" value="100" min="50" max="300" step="10" style="width:64px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-size:12px;">
+        <span style="font-size:11px;color:var(--text-dim);">px (พื้นที่รอบ mask)</span>
+      </div>
+    </div>
+
+    <!-- About -->
+    <div style="border-top:1px solid var(--border);padding-top:12px;">
+      <div style="font-size:10px;color:var(--text-dim);text-align:center;line-height:1.6;">
+        🪄 Hexqine Translator<br>
+        <span style="opacity:0.5;">OCR · Inpaint · Translate</span>
+      </div>
+    </div>
+
+    <!-- Apply Button -->
+    <button onclick="applySettings()" style="
+      background:var(--accent);border:none;border-radius:8px;padding:8px;
+      color:white;font-family:'Noto Sans Thai',sans-serif;font-size:13px;
+      font-weight:700;cursor:pointer;width:100%;
+    ">✅ บันทึกการตั้งค่า</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- LEFT: Thumbnail Panel -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">✦ หน้าการ์ตูน</span>
+      <span id="page-count" style="font-size:10px;color:var(--text-dim);">0 หน้า</span>
+    </div>
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" id="file-input" accept="image/*" multiple onchange="handleFiles(this.files)">
+      <div class="upload-icon">🖼️</div>
+      <div class="upload-text"><strong>คลิกอัพโหลด</strong> หรือลากวาง<br><span style="font-size:10px;">PNG · JPG · WebP</span></div>
+    </div>
+    <div class="pages-list" id="pages-list">
+      <div class="empty-state" id="empty-state">
+        <svg viewBox="0 0 80 80" width="48" height="48" style="margin-bottom:6px;opacity:0.6;">
+          <polygon points="40,5 68,20 68,55 40,70 12,55 12,20" fill="#6366f1"/>
+          <circle cx="32" cy="32" r="4" fill="white" opacity="0.9"/>
+          <circle cx="48" cy="32" r="4" fill="white" opacity="0.9"/>
+          <circle cx="33" cy="33" r="2" fill="#1a1a2e"/>
+          <circle cx="49" cy="33" r="2" fill="#1a1a2e"/>
+          <path d="M34 44 Q40 50 46 44" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div>ยังไม่มีหน้าการ์ตูน</div>
+      </div>
+    </div>
+    <!-- Multi-Page button ที่ bottom ของ sidebar ซ้าย -->
+    <div style="padding:8px;border-top:1px solid var(--border);flex-shrink:0;">
+      <button onclick="toggleMultiPanel()" id="btn-multi-toggle" disabled style="
+        width:100%;padding:8px;border:1px solid var(--border);
+        border-radius:8px;background:var(--surface2);
+        color:var(--text-dim);font-size:11px;font-weight:700;
+        cursor:pointer;transition:all .2s;
+        display:flex;align-items:center;justify-content:center;gap:6px;
+      " onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">
+        ⚡ Multi-Page
+      </button>
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div class="canvas-area" id="canvas-area">
+    <div class="canvas-placeholder" id="canvas-placeholder">
+      <!-- Hex mascot -->
+      <svg viewBox="0 0 120 150" width="100" height="125" style="margin-bottom:12px;">
+        <polygon points="60,8 98,28 98,68 60,88 22,68 22,28" fill="#6366f1" opacity="0.85"/>
+        <circle cx="46" cy="43" r="6" fill="white" opacity="0.95"/>
+        <circle cx="74" cy="43" r="6" fill="white" opacity="0.95"/>
+        <circle cx="48" cy="45" r="3" fill="#1a1a2e"/>
+        <circle cx="76" cy="45" r="3" fill="#1a1a2e"/>
+        <circle cx="49" cy="44" r="1" fill="white"/>
+        <circle cx="77" cy="44" r="1" fill="white"/>
+        <path d="M48 60 Q60 70 72 60" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <line x1="22" y1="48" x2="5" y2="65" stroke="#a855f7" stroke-width="6" stroke-linecap="round"/>
+        <line x1="98" y1="48" x2="115" y2="65" stroke="#a855f7" stroke-width="6" stroke-linecap="round"/>
+        <line x1="44" y1="88" x2="36" y2="118" stroke="#6366f1" stroke-width="6" stroke-linecap="round"/>
+        <line x1="76" y1="88" x2="84" y2="118" stroke="#6366f1" stroke-width="6" stroke-linecap="round"/>
+        <ellipse cx="33" cy="122" rx="10" ry="5" fill="#a855f7"/>
+        <ellipse cx="87" cy="122" rx="10" ry="5" fill="#a855f7"/>
+        <text x="2" y="22" font-size="14" fill="#a855f7" opacity="0.9">✦</text>
+        <text x="102" y="18" font-size="11" fill="#6366f1" opacity="0.9">✦</text>
+        <text x="55" y="145" font-size="9" fill="#6366f1" opacity="0.5">✦</text>
+      </svg>
+      <p style="font-family:'Space Mono',monospace;font-size:11px;background:linear-gradient(135deg,#6366f1,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">เลือกหน้าการ์ตูนจากแผงซ้าย</p>
+    </div>
+
+    <div id="viewport">
+      <div id="transform-wrap">
+        <div id="canvas-container">
+          <img id="base-img" src="" alt="comic" draggable="false">
+          <canvas id="overlay-canvas"></canvas>
+          <div id="selection-rect"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zoom hint -->
+    <div class="zoom-hint">🖱️ Scroll = เลื่อน · Alt+Scroll = Zoom · Space+ลาก = เลื่อนรูป · Tab = box ถัดไป · M = Mark · Ctrl+D = ลบที่ Mark</div>
+
+    <!-- Zoom controls -->
+    <div class="zoom-controls">
+      <button class="zoom-btn" onclick="zoomBy(-0.25)" title="Zoom Out">−</button>
+      <span class="zoom-label" id="zoom-label">100%</span>
+      <button class="zoom-btn" onclick="zoomBy(0.25)" title="Zoom In">+</button>
+      <button class="zoom-btn" onclick="resetZoom()" title="Reset" style="font-size:12px;">⟳</button>
+      <button class="zoom-btn" onclick="fitToScreen()" title="Fit" style="font-size:11px;">⊡</button>
+    </div>
+  </div>
+
+  <!-- TOOLS -->
+  <div class="panel tools-panel">
+    <div class="panel-header">
+      <span class="panel-title">🧰 เครื่องมือ</span>
+    </div>
+
+    <div class="tool-section">
+      <div class="tool-section-title">ขั้นตอน</div>
+      <div class="steps">
+        <div class="step idle" id="step-upload"><span class="step-icon">📂</span><span class="step-name">อัพโหลดรูป</span><span id="ss-upload">—</span></div>
+        <div class="step idle" id="step-ocr"><span class="step-icon">🔍</span><span class="step-name">Detect + OCR</span><span id="ss-ocr">—</span></div>
+        <div class="step idle" id="step-translate"><span class="step-icon">🌐</span><span class="step-name">แปลเกาหลี→ไทย</span><span id="ss-translate">—</span></div>
+        <div class="step idle" id="step-box"><span class="step-icon">📝</span><span class="step-name">วาง Text Box</span><span id="ss-box">—</span></div>
+      </div>
+    </div>
+
+    <div class="tool-section">
+      <div class="tool-section-title">⚡ ขั้นตอนการทำงาน</div>
+
+      <!-- MC Detect — หลัก -->
+      <button onclick="runMCDetect()" id="btn-mc-detect" disabled
+        style="width:100%;padding:11px;margin-bottom:6px;
+          background:linear-gradient(135deg,#0ea5e9,#059669,#10b981);
+          border:none;border-radius:12px;color:white;
+          font-size:13px;font-weight:800;cursor:pointer;
+          letter-spacing:0.5px;
+          box-shadow:0 4px 18px rgba(5,150,105,0.45);
+          transition:all .2s;"
+        onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(5,150,105,0.6)'"
+        onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 18px rgba(5,150,105,0.45)'"
+        title="MangaCleaner Heatmap OCR — แม่นกว่า YOLO">
+        🔍 Detect Text
+      </button>
+      <!-- ONNX Detect — สำรอง -->
+      <button onclick="runDetectVersion(5)" id="btn-detect-v5" disabled
+        style="width:100%;padding:7px;margin-bottom:6px;
+          background:none;border:1px solid rgba(99,102,241,0.5);
+          border-radius:8px;color:rgba(99,102,241,0.8);
+          font-size:11px;cursor:pointer;transition:all .2s;"
+        onmouseover="this.style.borderColor='#6366f1';this.style.color='#6366f1'"
+        onmouseout="this.style.borderColor='rgba(99,102,241,0.5)';this.style.color='rgba(99,102,241,0.8)'"
+        title="ONNX Bubble Detector — สำรอง">
+        🔮 ONNX Detect
+      </button>
+      <p style="font-size:10px;color:var(--text-dim);line-height:1.5;margin-bottom:10px;">ให้ AI หา Balloon อัตโนมัติด้วย YOLO ครับ</p>
+
+      <!-- Step 1B: Manual Draw -->
+      <div style="margin-bottom:4px;">
+        <div style="font-size:10px;color:var(--text-dim);margin-bottom:6px;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:1px;">🛠️ เลือก Tool วาด</div>
+        <div class="btn-row" style="margin-bottom:6px;">
+          <button class="btn-half" id="btn-tool-rect" onclick="setDrawTool('rect')" style="border:2px solid var(--accent);color:var(--accent);">⬜ กรอบ</button>
+          <button class="btn-half" id="btn-tool-lasso" onclick="setDrawTool('lasso')">🔵 Lasso</button>
+        </div>
+        <div class="btn-row" style="margin-bottom:6px;">
+          <button class="btn-half" id="btn-tool-pen" onclick="setDrawTool('pen')">✏️ Pen</button>
+          <button class="btn-half" onclick="clearAllBoxes()">🗑️ ลบทั้งหมด</button>
+        </div>
+        <button class="btn-secondary" id="btn-draw-mode" onclick="toggleDrawMode()" style="width:100%;margin-bottom:6px;">✏️ เปิดโหมดวาด</button>
+        <!-- Mask Mode -->
+        <button id="btn-mask-mode" onclick="toggleMaskMode()" style="width:100%;margin-bottom:6px;padding:7px;background:none;border:1px dashed var(--border);border-radius:8px;color:var(--text-dim);font-size:12px;cursor:pointer;transition:all .2s;" title="วาด Lasso/Pen ทับ Box เพื่อ override Inpaint Mask">
+          🎭 Mask Mode
+        </button>
+        <!-- Undo/Redo -->
+        <div class="btn-row">
+          <button class="btn-half" id="btn-undo" onclick="undo()" disabled title="Ctrl+Z">↩️ Undo</button>
+          <button class="btn-half" id="btn-redo" onclick="redo()" disabled title="Ctrl+Y / Ctrl+X">↪️ Redo</button>
+        </div>
+      </div>
+      <p style="font-size:10px;color:var(--text-dim);line-height:1.5;margin-bottom:10px;">เลือก Tool → เปิดโหมดวาด → ลากครอบข้อความ → OCR อัตโนมัติ · กด Esc ออก · Ctrl+Z ย้อนกลับ</p>
+
+      <!-- Step 2: Inpaint -->
+      <div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;background:var(--surface2);">
+        <div style="font-size:10px;color:var(--text-dim);margin-bottom:8px;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:1px;">🧹 Inpaint — ลบข้อความเกาหลี</div>
+        <button class="btn-primary" id="btn-inpaint-anime" onclick="runInpaint('anime')" disabled style="margin-bottom:6px;background:linear-gradient(135deg,#ec4899,#8b5cf6);">
+          ✦ Inpaint
+        </button>
+          <div class="btn-row" style="margin-bottom:8px;">
+          <button class="btn-half" id="btn-inpaint-auto" onclick="runInpaint('auto')" disabled>✨ Auto สี</button>
+          <button class="btn-half" id="btn-inpaint-color" onclick="runInpaint('color')" disabled>🎨 เลือกสี</button>
+        </div>
+        <div class="control-row" style="margin-bottom:0;">
+          <span class="control-label">สีที่เลือก</span>
+          <input type="color" class="ctrl" id="inpaint-color" value="#ffffff">
+          <span style="font-size:10px;color:var(--text-dim);margin-left:4px;">ใช้กับปุ่ม "เลือกสี"</span>
+        </div>
+      </div>
+
+      <!-- Step 3: OCR + Translate -->
+      <button class="btn-primary" id="btn-translate" onclick="runOcrAndTranslate()" disabled style="background:var(--surface2);border:1px solid var(--border);color:var(--text);">
+        📖 OCR + แปลทั้งหมด
+      </button>
+      <p style="font-size:10px;color:var(--text-dim);line-height:1.5;">อ่านและแปลทุก Box พร้อมกันเลยครับ</p>
+    </div>
+
+    <div class="tool-section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="tool-section-title" style="margin-bottom:0;">🔠 ตั้งค่าฟอนต์</div>
+        <div style="display:flex;gap:3px;">
+          <button onclick="savePreset(0)" title="บันทึก F1" style="padding:3px 6px;background:none;border:1px solid var(--border);border-radius:4px;color:var(--text-dim);font-size:9px;cursor:pointer;font-family:'Space Mono',monospace;line-height:1;">💾 F1</button>
+          <button onclick="savePreset(1)" title="บันทึก F2" style="padding:3px 6px;background:none;border:1px solid var(--border);border-radius:4px;color:var(--text-dim);font-size:9px;cursor:pointer;font-family:'Space Mono',monospace;line-height:1;">💾 F2</button>
+          <button onclick="savePreset(2)" title="บันทึก F3" style="padding:3px 6px;background:none;border:1px solid var(--border);border-radius:4px;color:var(--text-dim);font-size:9px;cursor:pointer;font-family:'Space Mono',monospace;line-height:1;">💾 F3</button>
+        </div>
+      </div>
+      <div class="control-row">
+        <span class="control-label">ฟอนต์</span>
+        <select class="ctrl" id="font-family" onchange="updateSelectedBox()">
+          <option value="Noto Sans Thai">Noto Sans Thai</option>
+          <option value="Sarabun">Sarabun</option>
+          <option value="Prompt">Prompt</option>
+          <option value="Kanit">Kanit</option>
+        </select>
+      </div>
+      <div class="control-row">
+        <span class="control-label">ขนาด</span>
+        <input type="number" class="ctrl" id="font-size" value="14" min="8" max="72" onchange="updateSelectedBox()">
+        <span style="font-size:10px;color:var(--text-dim);">px</span>
+      </div>
+      <div class="control-row">
+        <span class="control-label">สีข้อความ</span>
+        <input type="color" class="ctrl" id="font-color" value="#000000" onchange="updateSelectedBox()">
+        <span class="control-label" style="margin-left:6px;">พื้นหลัง</span>
+        <input type="color" class="ctrl" id="bg-color" value="#ffffff" onchange="updateSelectedBox()">
+      </div>
+      <div class="control-row">
+        <span class="control-label">โปร่งใส</span>
+        <input type="range" id="bg-opacity" min="0" max="100" value="0" style="flex:1;" oninput="updateOpacityLabel();updateSelectedBox()">
+        <span id="opacity-val" style="font-size:10px;color:var(--text-dim);min-width:28px;">0%</span>
+      </div>
+      <!-- Stroke -->
+      <div class="control-row">
+        <span class="control-label">Stroke</span>
+        <input type="number" class="ctrl" id="stroke-width" value="0" min="0" max="10" style="width:44px;" onchange="updateSelectedBox()">
+        <span style="font-size:10px;color:var(--text-dim);margin-right:4px;">px</span>
+        <input type="color" class="ctrl" id="stroke-color" value="#ffffff" onchange="updateSelectedBox()">
+      </div>
+      <!-- Line Height -->
+      <div class="control-row">
+        <span class="control-label">บรรทัด</span>
+        <select class="ctrl" id="line-height-mode" onchange="toggleLineHeightInput();updateSelectedBox()" style="width:60px;">
+          <option value="auto">Auto</option>
+          <option value="custom">กำหนด</option>
+        </select>
+        <input type="number" class="ctrl" id="line-height-val" value="1.4" min="0.8" max="4" step="0.1" style="width:52px;display:none;" onchange="updateSelectedBox()">
+        <span id="line-height-unit" style="font-size:10px;color:var(--text-dim);display:none;">×</span>
+      </div>
+      <!-- Box Shape -->
+      <div class="control-row">
+        <span class="control-label">รูปทรง</span>
+        <div style="display:flex;gap:4px;flex:1;">
+          <button id="btn-shape-rect" onclick="setBoxShape('rect')"
+            style="flex:1;padding:4px;background:var(--accent);border:none;border-radius:6px;color:white;font-size:11px;cursor:pointer;">
+            ⬜ สี่เหลี่ยม
+          </button>
+          <button id="btn-shape-circle" onclick="setBoxShape('circle')"
+            style="flex:1;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-size:11px;cursor:pointer;">
+            ⭕ วงรี
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="tool-section" id="edit-section" style="display:none;">
+      <div class="tool-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>✏️ Box ที่เลือก</span>
+        <button onclick="toggleAllBoxesPanel()" style="font-size:10px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;" title="ดูทุก Box">📋 ดูทั้งหมด</button>
+      </div>
+      <!-- ต้นฉบับของ Box ที่เลือก -->
+      <div class="text-label">ต้นฉบับ <span class="lang-tag">🇰🇷 เกาหลี</span></div>
+      <textarea class="text-box-input" id="selected-korean" placeholder="ข้อความเกาหลีของ Box นี้..." readonly style="margin-bottom:8px;"></textarea>
+      <!-- คำแปลของ Box ที่เลือก -->
+      <div class="text-label">คำแปล <span class="lang-tag">🇹🇭 ไทย</span></div>
+      <textarea class="text-box-input" id="selected-thai" placeholder="คำแปลของ Box นี้..." oninput="updateSelectedBoxText()"></textarea>
+
+      <!-- Custom Mask -->
+      <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">
+        <div style="font-size:10px;color:var(--text-dim);margin-bottom:6px;font-family:'Space Mono',monospace;">🎭 INPAINT MASK</div>
+        <div id="custom-mask-status" style="font-size:10px;color:var(--text-dim);margin-bottom:6px;">
+          ใช้ Box Rectangle (default)
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button id="btn-draw-custom-mask" onclick="startCustomMask()" style="flex:1;padding:5px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;cursor:pointer;">
+            ✏️ วาด Mask
+          </button>
+          <button id="btn-clear-custom-mask" onclick="clearCustomMask()" style="padding:5px 8px;background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-size:11px;cursor:pointer;" title="ลบ Custom Mask">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slideshow Panel — ทุก Box -->
+    <div id="all-boxes-panel" style="display:none;position:fixed;top:0;right:0;width:300px;height:100vh;background:var(--surface);border-left:1px solid var(--border);z-index:9998;overflow-y:auto;padding:16px;box-shadow:-4px 0 20px rgba(0,0,0,0.4);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);">📋 ทุก Box</span>
+        <button onclick="toggleAllBoxesPanel()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;">✕</button>
+      </div>
+      <div id="all-boxes-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
+    <!-- Hidden textareas สำหรับ export (ไม่แสดง UI) -->
+    <textarea id="source-text" style="display:none;"></textarea>
+    <textarea id="translated-text" style="display:none;"></textarea>
+
+    <div class="tool-section" id="balloon-section" style="display:none;">
+      <div class="tool-section-title">📋 รายการ Balloon</div>
+      <div class="balloon-list" id="balloon-list"></div>
+    </div>
+
+    <div class="tool-section">
+      <div class="tool-section-title">💾 Export</div>
+      <button class="btn-primary" id="btn-export-final" onclick="exportFinal()" disabled style="margin-bottom:5px;">🖼️ Export รูปพร้อมคำแปล</button>
+      <button class="btn-primary" id="btn-export-psd" onclick="exportPSD()" disabled style="margin-bottom:5px;background:linear-gradient(135deg,#0ea5e9,#6366f1);">
+        🎨 Export PSD (Photoshop)
+      </button>
+      <div class="export-row">
+        <button class="btn-export" id="btn-export-txt" onclick="exportText()" disabled>📄 TXT</button>
+        <button class="btn-export" id="btn-export-clean" onclick="exportClean()" disabled>🖼️ รูปต้นฉบับ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ========== STATE ==========
+const state = {
+  pages:[], currentIndex:-1, isProcessing:false,
+  textBoxes:[], selectedBox:null, drawMode:false,
+  drawTool:'rect',
+  isDrawing:false, drawStart:{x:0,y:0},
+  lassoPoints:[], penPoints:[],
+  ocrResults:[],
+  scale:1, panX:0, panY:0,
+  isPanning:false, panStart:{x:0,y:0}, panOrigin:{x:0,y:0},
+  spaceDown:false,
+  maskMode: false,
+  // Undo/Redo history
+  history:[], historyIndex:-1
+};
+
+// ========== UNDO/REDO ==========
+function saveHistory(){
+  // ตัด history ข้างหน้าออก (ถ้ากด undo แล้ว action ใหม่)
+  state.history = state.history.slice(0, state.historyIndex + 1);
+  // เก็บ snapshot ของ textBoxes (deep copy)
+  state.history.push(JSON.parse(JSON.stringify(state.textBoxes)));
+  state.historyIndex = state.history.length - 1;
+  // จำกัดไว้แค่ 50 steps
+  if(state.history.length > 50){
+    state.history.shift();
+    state.historyIndex--;
+  }
+  updateUndoRedoBtns();
+  // Auto-save boxes กลับไปที่ page ปัจจุบันเสมอ
+  // ทำให้ตอน switch หน้าแล้วกลับมา จะเห็น boxes ล่าสุดเสมอครับ
+  if(state.currentIndex >= 0 && state.pages[state.currentIndex]) {
+    state.pages[state.currentIndex].savedBoxes = JSON.parse(JSON.stringify(state.textBoxes));
+    state.pages[state.currentIndex].savedOcrResults = JSON.parse(JSON.stringify(state.ocrResults));
+  }
+}
+
+function undo(){
+  if(state.historyIndex <= 0) return;
+  state.historyIndex--;
+  restoreHistory(state.history[state.historyIndex]);
+  toast('↩️ Undo', 'success');
+  updateUndoRedoBtns();
+}
+
+function redo(){
+  if(state.historyIndex >= state.history.length - 1) return;
+  state.historyIndex++;
+  restoreHistory(state.history[state.historyIndex]);
+  toast('↪️ Redo', 'success');
+  updateUndoRedoBtns();
+}
+
+function restoreHistory(snapshot){
+  // ลบ HTML elements เดิมออกทั้งหมด
+  state.textBoxes.forEach(b=>{
+    const el=document.getElementById(b.id); if(el) el.remove();
+  });
+  state.selectedBox = null;
+  document.getElementById('edit-section').style.display='none';
+
+  // สร้าง boxes ใหม่จาก snapshot
+  state.textBoxes = JSON.parse(JSON.stringify(snapshot));
+  state.textBoxes.forEach(box => renderBoxEl(box));
+
+  renderBalloonList();
+  if(state.textBoxes.length) enableExport();
+}
+
+function updateUndoRedoBtns(){
+  const btnUndo = document.getElementById('btn-undo');
+  const btnRedo = document.getElementById('btn-redo');
+  if(btnUndo) btnUndo.disabled = state.historyIndex <= 0;
+  if(btnRedo) btnRedo.disabled = state.historyIndex >= state.history.length - 1;
+}
+
+// ========== INIT ==========
+window.onload = () => {
+  initModelSelector();
+  initStudio();
+  const zone = document.getElementById('upload-zone');
+  zone.addEventListener('dragover', e=>{e.preventDefault();zone.classList.add('drag-over');});
+  zone.addEventListener('dragleave', ()=>zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e=>{e.preventDefault();zone.classList.remove('drag-over');handleFiles(e.dataTransfer.files);});
+
+  // Zoom with mouse wheel
+  document.getElementById('viewport').addEventListener('wheel', onWheel, {passive:false});
+
+  // Pan with mouse
+  document.getElementById('viewport').addEventListener('mousedown', onViewportMouseDown);
+  document.addEventListener('mousemove', onViewportMouseMove);
+  document.addEventListener('mouseup', onViewportMouseUp);
+
+  // Space key for pan
+  document.addEventListener('keydown', e=>{
+    if(e.code==='Space' && !e.target.matches('textarea,input')){e.preventDefault();state.spaceDown=true;updateCursor();}
+    if(e.code==='Escape'){
+      deselectAll();
+      if(state.drawMode) toggleDrawMode();
+      state.penPoints=[];
+      state.lassoPoints=[];
+      clearOverlay();
+    }
+    // ข้ามการทำงานถ้า focus อยู่ใน textarea/input
+    const inInput = e.target.matches('textarea,input');
+
+    // Delete/Backspace — ลบ box ที่เลือก
+    if((e.code==='Delete'||e.code==='Backspace') && state.selectedBox && !inInput){
+      e.preventDefault();
+      removeBox(state.selectedBox);
+    }
+
+    // Tab — เลือก box ถัดไป / Shift+Tab — เลือก box ก่อนหน้า
+    if(e.code==='Tab' && !inInput && state.textBoxes.length > 0){
+      e.preventDefault();
+      const boxes = state.textBoxes;
+      // ถ้า selectedBox เป็น null (เช่นหลังลบ) ให้ใช้ lastTabIndex แทน
+      const currentIdx = state.selectedBox
+        ? boxes.findIndex(b => b.id === state.selectedBox)
+        : (state.lastTabIndex !== undefined ? state.lastTabIndex - 1 : -1);
+      let nextIdx;
+      if(e.shiftKey){
+        nextIdx = currentIdx <= 0 ? boxes.length - 1 : currentIdx - 1;
+      } else {
+        nextIdx = currentIdx >= boxes.length - 1 ? 0 : currentIdx + 1;
+      }
+      state.lastTabIndex = nextIdx;
+      selectBox(boxes[nextIdx].id);
+      const el = document.getElementById(boxes[nextIdx].id);
+      if(el) el.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+
+    if(!inInput){
+      // Undo: Ctrl+Z
+      if(e.ctrlKey && e.code==='KeyZ'){ e.preventDefault(); undo(); }
+      // Redo: Ctrl+Y
+      if(e.ctrlKey && (e.code==='KeyY' || e.code==='KeyX')){ e.preventDefault(); redo(); }
+      // F1/F2/F3 — Apply font preset
+      if(e.code==='F1'){ e.preventDefault(); applyFontPreset(0); }
+      if(e.code==='F2'){ e.preventDefault(); applyFontPreset(1); }
+      if(e.code==='F3'){ e.preventDefault(); applyFontPreset(2); }
+      // M — Mark/Unmark box ที่เลือกอยู่ เพื่อลบทีหลัง
+      if(e.code==='KeyM' && state.selectedBox){
+        e.preventDefault();
+        toggleMarkBox(state.selectedBox);
+      }
+      // Ctrl+D — ลบทุก box ที่ mark ไว้
+      if(e.ctrlKey && e.code==='KeyD'){
+        e.preventDefault();
+        deleteMarkedBoxes();
+      }
+    }
+  });
+  document.addEventListener('keyup', e=>{
+    if(e.code==='Space'){state.spaceDown=false;updateCursor();}
+  });
+  // โหลดฟอนต์จาก folder fonts/ อัตโนมัติ
+  loadFontsFromFolder();
+  // โหลด font presets จาก localStorage
+  loadPresetsFromStorage();
+};
+
+// ========== ZOOM/PAN ==========
+function applyTransform(){
+  document.getElementById('transform-wrap').style.transform = `translate(${state.panX}px,${state.panY}px) scale(${state.scale})`;
+  document.getElementById('zoom-label').textContent = Math.round(state.scale*100)+'%';
+}
+
+function onWheel(e){
+  e.preventDefault();
+  if(e.altKey){
+    // Alt+Scroll = Zoom in/out
+    const vp = document.getElementById('viewport');
+    const rect = vp.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const delta = e.deltaY > 0 ? -0.15 : 0.15;
+    const newScale = Math.min(Math.max(state.scale + delta, 0.2), 5);
+    const scaleRatio = newScale / state.scale;
+    state.panX = mouseX - scaleRatio*(mouseX - state.panX);
+    state.panY = mouseY - scaleRatio*(mouseY - state.panY);
+    state.scale = newScale;
+    applyTransform();
+  } else {
+    // Scroll ปกติ = เลื่อนขึ้น-ลง
+    state.panY -= e.deltaY;
+    applyTransform();
+  }
+}
+
+function zoomBy(delta){
+  const vp = document.getElementById('viewport');
+  const cx = vp.offsetWidth/2, cy = vp.offsetHeight/2;
+  const newScale = Math.min(Math.max(state.scale+delta,0.2),5);
+  const r = newScale/state.scale;
+  state.panX = cx - r*(cx-state.panX);
+  state.panY = cy - r*(cy-state.panY);
+  state.scale = newScale;
+  applyTransform();
+}
+
+function resetZoom(){
+  state.scale=1; state.panX=0; state.panY=0;
+  applyTransform();
+}
+
+function fitToScreen(){
+  const img = document.getElementById('base-img');
+  if(!img.naturalWidth) return;
+  const vp = document.getElementById('viewport');
+  const scaleX = vp.offsetWidth / img.naturalWidth;
+  const scaleY = vp.offsetHeight / img.naturalHeight;
+  state.scale = Math.min(scaleX, scaleY) * 0.95;
+  state.panX = (vp.offsetWidth - img.naturalWidth * state.scale) / 2;
+  state.panY = (vp.offsetHeight - img.naturalHeight * state.scale) / 2;
+  applyTransform();
+}
+
+function onViewportMouseDown(e){
+  // Space ค้าง + คลิกซ้าย = Pan
+  if(e.button === 0 && state.spaceDown){
+    e.preventDefault();
+    state.isPanning=true;
+    state.panStart={x:e.clientX, y:e.clientY};
+    state.panOrigin={x:state.panX, y:state.panY};
+    document.getElementById('viewport').classList.add('panning');
+    return;
+  }
+  // Middle click = Pan
+  if(e.button === 1){
+    e.preventDefault();
+    state.isPanning=true;
+    state.panStart={x:e.clientX, y:e.clientY};
+    state.panOrigin={x:state.panX, y:state.panY};
+    document.getElementById('viewport').classList.add('panning');
+    return;
+  }
+
+  if(!state.drawMode || e.target.closest('.text-box-el')) return;
+  e.preventDefault();
+  const pos = getCanvasPos(e);
+
+  if(state.drawTool === 'rect'){
+    // กรอบสี่เหลี่ยม — เหมือนเดิม
+    state.isDrawing=true;
+    state.drawStart=pos;
+    const sr = document.getElementById('selection-rect');
+    sr.style.display='block';
+    sr.style.left=pos.x+'px'; sr.style.top=pos.y+'px';
+    sr.style.width='0'; sr.style.height='0';
+
+  } else if(state.drawTool === 'lasso'){
+    // Lasso — กด+ลาก สร้าง freehand path
+    state.isDrawing=true;
+    state.lassoPoints=[pos];
+
+  } else if(state.drawTool === 'pen'){
+    // Pen — คลิกวางจุด, ดับเบิ้ลคลิกปิด
+    if(e.detail === 2){
+      // ดับเบิ้ลคลิก — ปิด polygon
+      finalizePen();
+      return;
+    }
+    // เช็คว่าคลิกใกล้จุดเริ่มต้นหรือไม่ (ปิด polygon)
+    if(state.penPoints.length >= 3){
+      const first = state.penPoints[0];
+      const dist = Math.hypot(pos.x-first.x, pos.y-first.y);
+      if(dist < 12){
+        finalizePen(); return;
+      }
+    }
+    state.penPoints.push(pos);
+    drawPenOverlay(state.penPoints);
+  }
+}
+
+function onViewportMouseMove(e){
+  if(state.isPanning){
+    state.panX = state.panOrigin.x + (e.clientX - state.panStart.x);
+    state.panY = state.panOrigin.y + (e.clientY - state.panStart.y);
+    applyTransform(); return;
+  }
+
+  if(!state.isDrawing) {
+    // Pen preview — แสดง preview เส้นจาก จุดสุดท้ายถึง mouse
+    if(state.drawMode && state.drawTool==='pen' && state.penPoints.length > 0){
+      const pos = getCanvasPos(e);
+      drawPenOverlay(state.penPoints, pos);
+    }
+    return;
+  }
+
+  const pos = getCanvasPos(e);
+
+  if(state.drawTool === 'rect'){
+    const sr = document.getElementById('selection-rect');
+    const x = Math.min(pos.x, state.drawStart.x);
+    const y = Math.min(pos.y, state.drawStart.y);
+    const w = Math.abs(pos.x - state.drawStart.x);
+    const h = Math.abs(pos.y - state.drawStart.y);
+    sr.style.left=x+'px'; sr.style.top=y+'px';
+    sr.style.width=w+'px'; sr.style.height=h+'px';
+
+  } else if(state.drawTool === 'lasso'){
+    state.lassoPoints.push(pos);
+    drawLassoOverlay(state.lassoPoints);
+  }
+}
+
+function onViewportMouseUp(e){
+  if(state.isPanning){
+    state.isPanning=false;
+    document.getElementById('viewport').classList.remove('panning');
+    return;
+  }
+
+  if(!state.isDrawing) return;
+  state.isDrawing=false;
+
+  if(state.drawTool === 'rect'){
+    document.getElementById('selection-rect').style.display='none';
+    const pos = getCanvasPos(e);
+    const x = Math.min(pos.x, state.drawStart.x);
+    const y = Math.min(pos.y, state.drawStart.y);
+    const w = Math.abs(pos.x - state.drawStart.x);
+    const h = Math.abs(pos.y - state.drawStart.y);
+    if(w>20 && h>15){
+      createTextBox({x,y,w,h,text:'📖 รอ OCR...'});
+      enableTranslateBtn();
+    }
+
+  } else if(state.drawTool === 'lasso'){
+    // วาดเสร็จ — ปิด polygon อัตโนมัติ
+    if(state.lassoPoints.length >= 3){
+      finalizeLasso();
+    } else {
+      state.lassoPoints=[];
+      clearOverlay();
+    }
+  }
+  // pen ไม่ trigger ที่ mouseUp ใช้ click แทน
+}
+
+// Convert viewport mouse pos → canvas-container local pos
+function getCanvasPos(e){
+  const container = document.getElementById('canvas-container');
+  const rect = container.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) / state.scale,
+    y: (e.clientY - rect.top) / state.scale
+  };
+}
+
+function updateCursor(){
+  const vp = document.getElementById('viewport');
+  if(state.drawMode){
+    const cursors = {rect:'crosshair', lasso:'cell', pen:'crosshair'};
+    vp.style.cursor = cursors[state.drawTool] || 'crosshair';
+    return;
+  }
+  if(state.spaceDown){ vp.style.cursor='grab'; return; }
+  vp.style.cursor='default';
+}
+
+// ========== FILES ==========
+function handleFiles(files){
+  const imgs = Array.from(files).filter(f=>f.type.startsWith('image/'));
+  if(!imgs.length){toast('กรุณาเลือกไฟล์รูปภาพ','error');return;}
+  imgs.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      state.pages.push({name:file.name, dataUrl:e.target.result, originalDataUrl:e.target.result});
+      renderPages();
+      if(state.pages.length===1) selectPage(0);
+      updateBtns();
+    };
+    reader.readAsDataURL(file);
+  });
+  toast(`📂 อัพโหลด ${imgs.length} หน้าสำเร็จ`,'success');
+  setStep('upload','done');
+}
+
+function renderPages(){
+  const list = document.getElementById('pages-list');
+  document.getElementById('page-count').textContent = state.pages.length + ' หน้า';
+  const empty = document.getElementById('empty-state');
+  if(!state.pages.length){
+    if(empty) empty.style.display = 'flex';
+    list.innerHTML = ''; return;
+  }
+  if(empty) empty.style.display = 'none';
+  list.innerHTML = '';
+
+  const STATUS_ICON = { detected:'🔍', translated:'✅', error:'❌' };
+
+  state.pages.forEach((p, i) => {
+    const isActive = i === state.currentIndex;
+    const statusIcon = STATUS_ICON[p.mpStatus] || '';
+
+    const div = document.createElement('div');
+    div.className = 'page-thumb' + (isActive ? ' active' : '');
+    div.style.marginBottom = '6px';
+    div.onclick = () => selectPage(i);
+
+    // Image wrapper
+    const imgWrap = document.createElement('div');
+    imgWrap.style.position = 'relative';
+
+    const img = document.createElement('img');
+    img.src = p.dataUrl;
+    img.style.cssText = 'width:100%;display:block;max-height:110px;object-fit:cover;';
+    imgWrap.appendChild(img);
+
+    // Active badge
+    if(isActive){
+      const badge = document.createElement('div');
+      badge.textContent = '● กำลังดูอยู่';
+      badge.style.cssText = 'position:absolute;top:5px;left:5px;background:var(--accent);color:white;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:800;';
+      imgWrap.appendChild(badge);
+    }
+
+    // Status badge
+    if(statusIcon){
+      const sb = document.createElement('div');
+      sb.textContent = statusIcon;
+      sb.style.cssText = 'position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.65);border-radius:4px;font-size:12px;padding:1px 4px;';
+      imgWrap.appendChild(sb);
+    }
+
+    div.appendChild(imgWrap);
+
+    // Info bar
+    const info = document.createElement('div');
+    info.className = 'page-thumb-info';
+    const num = document.createElement('span');
+    num.className = 'page-num';
+    num.textContent = 'หน้า ' + (i+1);
+    if(isActive){ num.style.color = 'var(--accent)'; num.style.fontWeight = '700'; }
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-delete';
+    delBtn.textContent = '🗑️';
+    delBtn.onclick = (e) => deletePage(i, e);
+    info.appendChild(num);
+    info.appendChild(delBtn);
+    div.appendChild(info);
+
+    list.appendChild(div);
+  });
+}
+function deletePage(i,e){
+  e.stopPropagation();
+  state.pages.splice(i,1);
+  if(state.currentIndex>=state.pages.length) state.currentIndex=state.pages.length-1;
+  renderPages();
+  if(state.pages.length) selectPage(state.currentIndex);
+  else{ document.getElementById('canvas-container').style.display='none'; document.getElementById('canvas-placeholder').style.display='block'; }
+  updateBtns();
+}
+
+// ========== DRAW MODE ==========
+function setDrawTool(tool){
+  state.drawTool = tool;
+  // อัพเดตปุ่ม active
+  ['rect','lasso','pen'].forEach(t => {
+    const btn = document.getElementById(`btn-tool-${t}`);
+    if(!btn) return;
+    if(t === tool){
+      btn.style.border = '2px solid var(--accent)';
+      btn.style.color = 'var(--accent)';
+    } else {
+      btn.style.border = '';
+      btn.style.color = '';
+    }
+  });
+  // เปิด draw mode อัตโนมัติถ้ายังไม่ได้เปิด
+  if(!state.drawMode) toggleDrawMode();
+  updateCursor();
+}
+
+function toggleDrawMode(){
+  state.drawMode=!state.drawMode;
+  const btn=document.getElementById('btn-draw-mode');
+  const indicator=document.getElementById('mode-indicator');
+  if(state.drawMode){
+    btn.classList.add('active');
+    const toolName = state.drawTool==='lasso'?'Lasso':state.drawTool==='pen'?'Pen':'กรอบ';
+    btn.textContent=`✏️ ${toolName} — กำลังวาด`;
+    if(indicator){ indicator.textContent=`✏️ ${toolName}`; indicator.classList.add('draw'); }
+    deselectAll();
+    clearOverlay();
+  } else {
+    btn.classList.remove('active'); btn.textContent='✏️ เปิดโหมดวาด';
+    if(indicator){ indicator.textContent='เลือก'; indicator.classList.remove('draw'); }
+    clearOverlay();
+  }
+  updateCursor();
+}
+
+// ========== OVERLAY CANVAS (สำหรับ Lasso + Pen) ==========
+function getOverlayCtx(){
+  const oc = document.getElementById('overlay-canvas');
+  return oc ? oc.getContext('2d') : null;
+}
+
+// maskOverlays: เก็บ polygon ที่ apply แล้ว เพื่อวาดซ้ำเมื่อ redraw
+const maskOverlays = {}; // { boxId: [{x,y}] }
+
+function drawAllMaskOverlays(){
+  const ctx = getOverlayCtx(); if(!ctx) return;
+  const oc = document.getElementById('overlay-canvas');
+  // clear แล้ววาด overlays ทั้งหมดใหม่
+  ctx.clearRect(0, 0, oc.width, oc.height);
+  for(const [boxId, pts] of Object.entries(maskOverlays)){
+    if(!pts || pts.length < 3) continue;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    pts.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.closePath();
+    // filled สีม่วง opacity จางๆ
+    ctx.fillStyle = 'rgba(139, 92, 246, 0.25)';
+    ctx.fill();
+    // เส้นขอบสีม่วง
+    ctx.strokeStyle = 'rgba(139, 92, 246, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function addMaskOverlay(boxId, pts){
+  maskOverlays[boxId] = pts;
+  drawAllMaskOverlays();
+}
+
+function removeMaskOverlay(boxId){
+  delete maskOverlays[boxId];
+  drawAllMaskOverlays();
+}
+
+function clearOverlay(){
+  const ctx = getOverlayCtx(); if(!ctx) return;
+  const oc = document.getElementById('overlay-canvas');
+  ctx.clearRect(0, 0, oc.width, oc.height);
+  // วาด mask overlays ถาวรกลับมา
+  drawAllMaskOverlays();
+}
+
+function drawLassoOverlay(points, closing=false){
+  const ctx = getOverlayCtx(); if(!ctx || points.length < 1) return;
+  const oc = document.getElementById('overlay-canvas');
+  ctx.clearRect(0, 0, oc.width, oc.height);
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  points.forEach(p => ctx.lineTo(p.x, p.y));
+  if(closing) ctx.closePath();
+  ctx.strokeStyle = '#ff6b35';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 3]);
+  ctx.stroke();
+  // วงกลมที่จุดเริ่มต้น
+  ctx.beginPath();
+  ctx.arc(points[0].x, points[0].y, 5, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,107,53,0.5)';
+  ctx.fill();
+  ctx.setLineDash([]);
+}
+
+function drawPenOverlay(points, mousePos=null){
+  const ctx = getOverlayCtx(); if(!ctx) return;
+  const oc = document.getElementById('overlay-canvas');
+  ctx.clearRect(0, 0, oc.width, oc.height);
+  if(points.length < 1) return;
+
+  // วาดเส้นระหว่างจุด
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  points.forEach(p => ctx.lineTo(p.x, p.y));
+  if(mousePos) ctx.lineTo(mousePos.x, mousePos.y);
+  ctx.strokeStyle = '#ff6b35';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 3]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // วาดจุด
+  points.forEach((p, i) => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, i===0 ? 6 : 4, 0, Math.PI*2);
+    ctx.fillStyle = i===0 ? 'rgba(255,107,53,0.8)' : 'rgba(255,107,53,0.5)';
+    ctx.fill();
+    ctx.strokeStyle = '#ff6b35';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+}
+
+function getBoundingBoxFromPoints(points){
+  const xs = points.map(p=>p.x), ys = points.map(p=>p.y);
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x;
+  const h = Math.max(...ys) - y;
+  return {x, y, w, h};
+}
+
+function finalizeLasso(){
+  const pts = state.lassoPoints;
+  if(pts.length < 3){ state.lassoPoints=[]; clearOverlay(); return; }
+  drawLassoOverlay(pts, true);
+
+  // Mask Mode — ใช้ IoU หา box แล้ว override mask
+  if(state.maskMode){
+    applyMaskToBox(pts);
+    state.lassoPoints = [];
+    setTimeout(clearOverlay, 500);
+    return;
+  }
+
+  // Custom Mask จาก panel (เดิม)
+  if(customMaskTargetId){
+    finishCustomMaskForBox(pts);
+    state.lassoPoints = [];
+    setTimeout(clearOverlay, 500);
+    return;
+  }
+
+  // ปกติ — สร้าง box ใหม่
+  const bb = getBoundingBoxFromPoints(pts);
+  const id = 'box_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  const box = {
+    id, x:bb.x, y:bb.y, w:bb.w, h:bb.h,
+    text:'📖 รอ OCR...', korean:'',
+    font:document.getElementById('font-family').value,
+    size:parseInt(document.getElementById('font-size').value),
+    color:document.getElementById('font-color').value,
+    bgColor:document.getElementById('bg-color').value,
+    bgOpacity:parseInt(document.getElementById('bg-opacity').value),
+    polygon: pts.map(p=>({x:p.x, y:p.y}))
+  };
+  state.textBoxes.push(box);
+  renderBoxEl(box);
+  selectBox(id);
+  setStep('box','done'); enableExport(); enableTranslateBtn(); saveHistory();
+  state.lassoPoints = [];
+  setTimeout(clearOverlay, 500);
+}
+
+function finalizePen(){
+  const pts = state.penPoints;
+  if(pts.length < 2){ state.penPoints=[]; clearOverlay(); return; }
+
+  // Mask Mode — ใช้ IoU หา box แล้ว override mask
+  if(state.maskMode){
+    applyMaskToBox(pts);
+    state.penPoints = [];
+    setTimeout(clearOverlay, 500);
+    return;
+  }
+
+  const bb = getBoundingBoxFromPoints(pts);
+  const id = 'box_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  const box = {
+    id, x:bb.x, y:bb.y, w:bb.w, h:bb.h,
+    text:'📖 รอ OCR...', korean:'',
+    font:document.getElementById('font-family').value,
+    size:parseInt(document.getElementById('font-size').value),
+    color:document.getElementById('font-color').value,
+    bgColor:document.getElementById('bg-color').value,
+    bgOpacity:parseInt(document.getElementById('bg-opacity').value),
+    polygon: pts.map(p=>({x:p.x, y:p.y}))
+  };
+  state.textBoxes.push(box);
+  renderBoxEl(box);
+  selectBox(id);
+  setStep('box','done'); enableExport(); enableTranslateBtn(); saveHistory();
+
+  state.penPoints = [];
+  setTimeout(clearOverlay, 500);
+}
+
+// ========== TEXT BOXES ==========
+function createTextBox({x,y,w,h,text,korean='',bubbleBox=null}){
+  const id='box_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  const lhMode = document.getElementById('line-height-mode').value;
+  const box={id,x,y,w,h,text,korean,
+    font:document.getElementById('font-family').value,
+    size:parseInt(document.getElementById('font-size').value),
+    color:document.getElementById('font-color').value,
+    bgColor:document.getElementById('bg-color').value,
+    bgOpacity:parseInt(document.getElementById('bg-opacity').value),
+    strokeWidth:parseInt(document.getElementById('stroke-width').value)||0,
+    strokeColor:document.getElementById('stroke-color').value,
+    lineHeightMode: lhMode,
+    lineHeight: lhMode==='auto' ? 1.4 : parseFloat(document.getElementById('line-height-val').value)||1.4,
+    shape: currentShape,  // เก็บ shape ปัจจุบัน
+    bubbleBox: bubbleBox
+  };
+  state.textBoxes.push(box);
+  renderBoxEl(box);
+  selectBox(id);
+  setStep('box','done'); enableExport();
+  saveHistory();
+  return box;
+}
+
+function renderBoxEl(box){
+  const container=document.getElementById('canvas-container');
+
+  // ลบ bubble frame เก่าออกก่อน (ถ้ามี)
+  const oldFrame = document.getElementById('bubble-frame-'+box.id);
+  if(oldFrame) oldFrame.remove();
+
+  const el=document.createElement('div');
+  el.className='text-box-el'; el.id=box.id;
+  el.style.left=box.x+'px'; el.style.top=box.y+'px';
+  el.style.width=box.w+'px'; el.style.height=box.h+'px';
+
+  // ถ้ามี polygon (Lasso/Pen) → ใช้ CSS clip-path แสดงรูปร่างจริงๆ
+  if(box.polygon && box.polygon.length >= 3){
+    const pts = box.polygon.map(p => {
+      const px = ((p.x - box.x) / box.w * 100).toFixed(1) + '%';
+      const py = ((p.y - box.y) / box.h * 100).toFixed(1) + '%';
+      return px + ' ' + py;
+    }).join(', ');
+    el.style.clipPath = `polygon(${pts})`;
+  }
+
+  // Purple mask overlay
+  const mask = document.createElement('div');
+  mask.className = 'text-box-mask';
+  mask.style.cssText = `
+    position:absolute; inset:0;
+    background:rgba(139,92,246,0.12);
+    border-radius:inherit;
+    pointer-events:none;
+    z-index:0;
+  `;
+  el.appendChild(mask);
+
+  applyBoxStyle(el,box);
+  const rh=document.createElement('div'); rh.className='resize-handle'; el.appendChild(rh);
+  ['nw','ne','sw','se'].forEach(pos => {
+    const c = document.createElement('div');
+    c.className = `corner ${pos}`;
+    c.dataset.corner = pos;
+    el.appendChild(c);
+  });
+  const db=document.createElement('div'); db.className='delete-btn'; db.textContent='×';
+  db.onclick=e=>{e.stopPropagation();removeBox(box.id);}; el.appendChild(db);
+  el.addEventListener('click',e=>{e.stopPropagation();selectBox(box.id);});
+  makeDraggable(el,box); makeResizable(el,box,rh);
+  container.appendChild(el);
+}
+
+function applyBoxStyle(el,box){
+  const r=parseInt(box.bgColor.slice(1,3),16);
+  const g=parseInt(box.bgColor.slice(3,5),16);
+  const b=parseInt(box.bgColor.slice(5,7),16);
+  el.style.background=`rgba(${r},${g},${b},${box.bgOpacity/100})`;
+  el.style.color=box.color;
+  el.style.fontFamily=`'${box.font}',sans-serif`;
+  el.style.fontSize=box.size+'px';
+  el.style.lineHeight = box.lineHeight ? box.lineHeight : 1.4;
+
+  // Shape — สี่เหลี่ยม หรือ วงรี
+  const shape = box.shape || 'rect';
+  if(shape === 'circle'){
+    el.style.borderRadius = '50%';
+    el.style.borderStyle = 'dashed';
+  } else {
+    el.style.borderRadius = '4px';
+    el.style.borderStyle = 'dashed';
+  }
+
+  // Stroke ด้วย text-shadow สี่ทิศทาง
+  const sw = box.strokeWidth||0;
+  const sc = box.strokeColor||'#ffffff';
+  if(sw > 0){
+    const s = sw;
+    el.style.textShadow = `
+      -${s}px -${s}px 0 ${sc},
+       ${s}px -${s}px 0 ${sc},
+      -${s}px  ${s}px 0 ${sc},
+       ${s}px  ${s}px 0 ${sc},
+      -${s}px  0    0 ${sc},
+       ${s}px  0    0 ${sc},
+       0    -${s}px 0 ${sc},
+       0     ${s}px 0 ${sc}
+    `;
+  } else {
+    el.style.textShadow = 'none';
+  }
+
+  // Set text — รองรับ newline (\n) จากการพิมพ์ Enter
+  el.style.whiteSpace = 'pre-wrap';
+  el.style.wordBreak = 'break-word';
+  // ลบ text nodes เดิมออก (ไม่แตะ child elements เช่น resize handle, delete btn)
+  Array.from(el.childNodes).forEach(node => {
+    if(node.nodeType === Node.TEXT_NODE) el.removeChild(node);
+  });
+  el.insertBefore(document.createTextNode(box.text), el.firstChild);
+}
+
+function selectBox(id){
+  deselectAll();
+  const box=state.textBoxes.find(b=>b.id===id); if(!box) return;
+  state.selectedBox=id;
+  const el=document.getElementById(id); if(el) el.classList.add('selected');
+  document.getElementById('font-family').value=box.font;
+  document.getElementById('font-size').value=box.size;
+  document.getElementById('font-color').value=box.color;
+  document.getElementById('bg-color').value=box.bgColor;
+  document.getElementById('bg-opacity').value=box.bgOpacity;
+  document.getElementById('opacity-val').textContent=box.bgOpacity+'%';
+  // Stroke
+  document.getElementById('stroke-width').value=box.strokeWidth||0;
+  document.getElementById('stroke-color').value=box.strokeColor||'#ffffff';
+  // Line Height
+  const lhMode = box.lineHeightMode||'auto';
+  document.getElementById('line-height-mode').value=lhMode;
+  if(lhMode==='custom'){
+    document.getElementById('line-height-val').style.display='';
+    document.getElementById('line-height-unit').style.display='';
+    document.getElementById('line-height-val').value=box.lineHeight||1.4;
+  } else {
+    document.getElementById('line-height-val').style.display='none';
+    document.getElementById('line-height-unit').style.display='none';
+  }
+  document.getElementById('edit-section').style.display='block';
+  document.getElementById('selected-korean').value = box.korean || '';
+  document.getElementById('selected-thai').value = box.text || '';
+  // Sync shape button
+  setBoxShape(box.shape || 'rect');
+  // แสดงสถานะ Custom Mask
+  updateCustomMaskStatus(box);
+  const drawBtn = document.getElementById('btn-draw-custom-mask');
+  if(drawBtn) drawBtn.textContent = box.customMask ? '✏️ วาด Mask ใหม่' : '✏️ วาด Mask';
+}
+
+function toggleLineHeightInput(){
+  const mode = document.getElementById('line-height-mode').value;
+  const inp = document.getElementById('line-height-val');
+  const unit = document.getElementById('line-height-unit');
+  if(mode==='custom'){
+    inp.style.display=''; unit.style.display='';
+  } else {
+    inp.style.display='none'; unit.style.display='none';
+  }
+}
+
+function deselectAll(){
+  state.selectedBox=null;
+  document.querySelectorAll('.text-box-el').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('edit-section').style.display='none';
+}
+
+function updateSelectedBox(){
+  if(!state.selectedBox) return;
+  const box=state.textBoxes.find(b=>b.id===state.selectedBox); if(!box) return;
+  box.font=document.getElementById('font-family').value;
+  box.size=parseInt(document.getElementById('font-size').value);
+  box.color=document.getElementById('font-color').value;
+  box.bgColor=document.getElementById('bg-color').value;
+  box.bgOpacity=parseInt(document.getElementById('bg-opacity').value);
+  box.strokeWidth=parseInt(document.getElementById('stroke-width').value)||0;
+  box.strokeColor=document.getElementById('stroke-color').value;
+  const lhMode=document.getElementById('line-height-mode').value;
+  box.lineHeightMode=lhMode;
+  box.lineHeight=lhMode==='auto'?1.4:parseFloat(document.getElementById('line-height-val').value)||1.4;
+  const el=document.getElementById(box.id); if(el) applyBoxStyle(el,box);
+}
+
+function updateSelectedBoxText(){
+  if(!state.selectedBox) return;
+  const box=state.textBoxes.find(b=>b.id===state.selectedBox); if(!box) return;
+  const newText = document.getElementById('selected-thai').value;
+  box.text = newText;
+  // sync ocrResult.thai ด้วยเพื่อให้ export ได้ค่าล่าสุดเสมอ
+  const ocrR = state.ocrResults.find(r => r.id === box.id);
+  if(ocrR) ocrR.thai = newText;
+  const el=document.getElementById(box.id); if(el) applyBoxStyle(el,box);
+  renderAllBoxesPanel();
+  saveHistory();
+}
+
+function removeBox(id){
+  state.textBoxes=state.textBoxes.filter(b=>b.id!==id);
+  const el=document.getElementById(id);
+  if(el) el.remove();
+  const bf=document.getElementById('bubble-frame-'+id); if(bf) bf.remove();
+  if(state.selectedBox===id){state.selectedBox=null;document.getElementById('edit-section').style.display='none';}
+  removeMaskOverlay(id);
+  renderAllBoxesPanel();
+  saveHistory();
+}
+
+function toggleMarkBox(id) {
+  const box = state.textBoxes.find(b => b.id === id);
+  if(!box) return;
+  box.marked = !box.marked;
+  const el = document.getElementById(id);
+  if(el) el.classList.toggle('marked', box.marked);
+  const count = state.textBoxes.filter(b => b.marked).length;
+  if(box.marked){
+    toast(`🗑️ Mark แล้ว — รวม ${count} box (Ctrl+D เพื่อลบ)`, 'success');
+  } else {
+    toast(`↩️ Unmark แล้ว — เหลือ ${count} box`, 'success');
+  }
+}
+
+function deleteMarkedBoxes() {
+  const marked = state.textBoxes.filter(b => b.marked);
+  if(!marked.length){ toast('ไม่มี box ที่ mark ไว้ครับ', 'error'); return; }
+  const count = marked.length;
+  marked.forEach(b => {
+    state.textBoxes = state.textBoxes.filter(x => x.id !== b.id);
+    const el = document.getElementById(b.id); if(el) el.remove();
+    const bf = document.getElementById('bubble-frame-'+b.id); if(bf) bf.remove();
+  });
+  if(state.selectedBox && marked.find(b => b.id === state.selectedBox)){
+    state.selectedBox = null;
+    document.getElementById('edit-section').style.display = 'none';
+  }
+  renderAllBoxesPanel();
+  saveHistory();
+  toast(`🗑️ ลบ ${count} box แล้วครับ`, 'success');
+}
+
+function clearAllBoxes(){
+  state.textBoxes.forEach(b=>{const el=document.getElementById(b.id);if(el)el.remove();});
+  state.textBoxes=[]; state.selectedBox=null;
+  document.getElementById('edit-section').style.display='none';
+  renderAllBoxesPanel();
+  saveHistory();
+}
+
+function selectPage(i){
+  state.currentIndex=i;
+  state.textBoxes=[]; state.selectedBox=null; state.ocrResults=[];
+  document.getElementById('source-text').value='';
+  document.getElementById('translated-text').value='';
+  document.getElementById('balloon-section').style.display='none';
+  document.getElementById('edit-section').style.display='none';
+  document.querySelectorAll('.text-box-el').forEach(el=>el.remove());
+
+  const img=document.getElementById('base-img');
+  img.onload=()=>{
+    document.getElementById('canvas-container').style.width=img.naturalWidth+'px';
+    document.getElementById('canvas-container').style.height=img.naturalHeight+'px';
+    document.getElementById('overlay-canvas').width=img.naturalWidth;
+    document.getElementById('overlay-canvas').height=img.naturalHeight;
+    document.getElementById('canvas-container').style.display='block';
+    document.getElementById('canvas-placeholder').style.display='none';
+    fitToScreen();
+
+    // Restore saved boxes ถ้ามี (จาก Multi-Page detect/translate)
+    const saved = state.pages[i]?.savedBoxes;
+    if(saved?.length) {
+      state.textBoxes = [];
+      state.ocrResults = state.pages[i].savedOcrResults || [];
+      for(const b of saved) {
+        state.textBoxes.push(b);
+        renderBoxEl(b);
+        const el = document.getElementById(b.id);
+        if(el) applyBoxStyle(el, b);
+      }
+      enableTranslateBtn(); enableExport();
+      setStep('box','done');
+      if(multiPanelOpen) renderMultiPageList();
+    }
+  };
+  img.src=state.pages[i].dataUrl;
+  renderPages(); updateBtns(); resetSteps(); setStep('upload','done');
+}
+
+// ========== ALL BOXES PANEL (Slideshow) ==========
+function toggleAllBoxesPanel(){
+  const panel = document.getElementById('all-boxes-panel');
+  const isOpen = panel.style.display !== 'none';
+  if(isOpen){
+    panel.style.display='none';
+  } else {
+    renderAllBoxesPanel();
+    panel.style.display='block';
+  }
+}
+
+function renderAllBoxesPanel(){
+  const list = document.getElementById('all-boxes-list');
+  if(!list) return;
+  if(!state.textBoxes.length){
+    list.innerHTML='<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:20px;">ยังไม่มี Box ครับ</div>';
+    return;
+  }
+  list.innerHTML = state.textBoxes.map((box,i) => `
+    <div onclick="selectBox('${box.id}')" style="
+      background:var(--surface2);border:1px solid ${state.selectedBox===box.id?'var(--accent)':'var(--border)'};
+      border-radius:8px;padding:10px;cursor:pointer;transition:all .2s;
+    ">
+      <div style="font-size:10px;color:var(--text-dim);margin-bottom:6px;font-family:'Space Mono',monospace;">
+        Box ${i+1}
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">
+        🇰🇷 ${box.korean ? box.korean.slice(0,40)+(box.korean.length>40?'...':'') : '—'}
+      </div>
+      <div style="font-size:12px;color:var(--text);font-weight:500;">
+        🇹🇭 ${box.text ? box.text.slice(0,40)+(box.text.length>40?'...':'') : '—'}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ========== CUSTOM INPAINT MASK ==========
+let customMaskTargetId = null;
+
+function toggleMaskMode(){
+  state.maskMode = !state.maskMode;
+  const btn = document.getElementById('btn-mask-mode');
+  if(state.maskMode){
+    btn.style.background = 'rgba(99,102,241,0.15)';
+    btn.style.borderColor = '#6366f1';
+    btn.style.color = '#6366f1';
+    btn.textContent = '🎭 Mask Mode — กำลังใช้งาน';
+    // เปิด draw mode + Lasso อัตโนมัติ
+    setDrawTool('lasso');
+    if(!state.drawMode) toggleDrawMode();
+    toast('🎭 Mask Mode — วาด Lasso/Pen ทับ Box เพื่อ override Inpaint Mask ครับ', 'success');
+  } else {
+    btn.style.background = 'none';
+    btn.style.borderColor = 'var(--border)';
+    btn.style.color = 'var(--text-dim)';
+    btn.textContent = '🎭 Mask Mode';
+    if(state.drawMode) toggleDrawMode();
+    toast('🎭 ออกจาก Mask Mode แล้วครับ', 'success');
+  }
+}
+
+function findBoxByOverlap(polygon){
+  // หา box ที่ polygon ทับมากที่สุด (IoU)
+  const xs = polygon.map(p=>p.x), ys = polygon.map(p=>p.y);
+  const px1=Math.min(...xs), py1=Math.min(...ys);
+  const px2=Math.max(...xs), py2=Math.max(...ys);
+  const polyArea = (px2-px1)*(py2-py1);
+
+  let bestBox=null, bestScore=0;
+  for(const box of state.textBoxes){
+    const bx2=box.x+box.w, by2=box.y+box.h;
+    const ix1=Math.max(px1,box.x), iy1=Math.max(py1,box.y);
+    const ix2=Math.min(px2,bx2), iy2=Math.min(py2,by2);
+    const inter=Math.max(0,ix2-ix1)*Math.max(0,iy2-iy1);
+    if(inter===0) continue;
+    const boxArea=box.w*box.h;
+    const union=polyArea+boxArea-inter;
+    const iou=inter/union;
+    // containment: polygon อยู่ใน box มากแค่ไหน
+    const containment=inter/polyArea;
+    const score=Math.max(iou, containment);
+    if(score>bestScore){ bestScore=score; bestBox=box; }
+  }
+  return bestScore > 0.2 ? bestBox : null;
+}
+
+function applyMaskToBox(polygon){
+  const box = findBoxByOverlap(polygon);
+  if(!box){
+    toast('⚠️ ไม่พบ Box ที่ทับกัน ลองวาดให้ทับ Box มากขึ้นครับ', 'error');
+    return;
+  }
+  box.customMask = polygon.map(p=>({x:p.x, y:p.y}));
+
+  // วาด purple overlay ถาวร
+  addMaskOverlay(box.id, box.customMask);
+
+  // อัพเดต status ถ้า box นี้ selected อยู่
+  if(state.selectedBox === box.id) updateCustomMaskStatus(box);
+
+  toast(`✅ บันทึก Custom Mask ให้ Box แล้วครับ (${polygon.length} จุด)`, 'success');
+  saveHistory();
+}
+
+function startCustomMask(){
+  const box = state.textBoxes.find(b => b.id === state.selectedBox);
+  if(!box){ toast('กรุณาเลือก Box ก่อนครับ', 'error'); return; }
+  customMaskTargetId = box.id;
+  setDrawTool('lasso');
+  if(!state.drawMode) toggleDrawMode();
+  document.getElementById('btn-draw-custom-mask').style.borderColor = 'var(--accent)';
+  document.getElementById('btn-draw-custom-mask').style.color = 'var(--accent)';
+  document.getElementById('btn-draw-custom-mask').textContent = '⏳ กำลังวาด...';
+  document.getElementById('custom-mask-status').textContent = 'กำลังวาด Mask — Lasso ล้อมรอบตัวอักษรครับ';
+  toast('🎭 วาด Lasso ล้อมรอบตัวอักษรที่อยาก Inpaint ครับ', 'success');
+}
+
+function finishCustomMaskForBox(polygon){
+  if(!customMaskTargetId) return;
+  const box = state.textBoxes.find(b => b.id === customMaskTargetId);
+  if(!box){ customMaskTargetId = null; return; }
+  box.customMask = polygon.map(p=>({x:p.x, y:p.y}));
+  customMaskTargetId = null;
+  updateCustomMaskStatus(box);
+  document.getElementById('btn-draw-custom-mask').style.borderColor = '';
+  document.getElementById('btn-draw-custom-mask').style.color = '';
+  document.getElementById('btn-draw-custom-mask').textContent = '✏️ วาด Mask ใหม่';
+  if(state.drawMode) toggleDrawMode();
+  toast('✅ บันทึก Custom Mask แล้วครับ', 'success');
+  saveHistory();
+}
+
+function clearCustomMask(){
+  const box = state.textBoxes.find(b => b.id === state.selectedBox);
+  if(!box) return;
+  delete box.customMask;
+  customMaskTargetId = null;
+  // ลบ overlay
+  removeMaskOverlay(box.id);
+  updateCustomMaskStatus(box);
+  document.getElementById('btn-draw-custom-mask').textContent = '✏️ วาด Mask';
+  toast('🗑️ ลบ Custom Mask แล้วครับ', 'success');
+  saveHistory();
+}
+
+function updateCustomMaskStatus(box){
+  const status = document.getElementById('custom-mask-status');
+  const clearBtn = document.getElementById('btn-clear-custom-mask');
+  if(!status) return;
+  if(box && box.customMask && box.customMask.length > 0){
+    status.textContent = `✅ Custom Mask (${box.customMask.length} จุด)`;
+    status.style.color = 'var(--accent)';
+    if(clearBtn) clearBtn.style.display = '';
+  } else {
+    status.textContent = 'ใช้ Box Rectangle (default)';
+    status.style.color = 'var(--text-dim)';
+    if(clearBtn) clearBtn.style.display = 'none';
+  }
+}
+
+// ========== TRANSLATION STUDIO ==========
+
+const STUDIO_PRESETS = {
+  gl: {
+    label: '🌸 GL',
+    desc: 'Girls Love',
+    prompt: `- เนื้อหาแนว GL (Girls Love / Yuri) รักระหว่างหญิง-หญิง
+- รักษาอารมณ์และความรู้สึกของความสัมพันธ์ให้ถูกต้อง
+- แปลคำพูดตาม personality จริงๆ ของแต่ละตัวละคร ไม่บังคับรูปแบบ
+- ทับศัพท์ชื่อตัวละคร ไม่แปลเป็นไทย`
+  },
+  bl: {
+    label: '💙 BL',
+    desc: 'Boys Love — มังฮวาชายรักชาย',
+    prompt: `- เนื้อหาแนวมังฮวาเกาหลีชายรักชาย (BL / Bromance)
+- รักษาอารมณ์ความสัมพันธ์ระหว่างชาย-ชาย ทั้งความใกล้ชิด ความตึงเครียด และความอ่อนโยน
+- ภาษาปรับตาม personality ของแต่ละตัวละคร เช่น ตัวแข็งกร้าวพูดกระชับ ตัวอ่อนโยนพูดนุ่มนวล
+- รักษาระดับ intimacy — เพื่อน ซึ้ง สนิท หรือชัดเจน ให้ใช้ภาษาที่สื่อถึง dynamic นั้น
+- ทับศัพท์ชื่อตัวละคร ไม่แปลเป็นไทย
+- คงความเป็นธรรมชาติของมังฮวาเกาหลี ไม่ฝืนหรืออธิบายเกิน`
+  },
+  action: {
+    label: '⚔️ Action',
+    desc: 'แอคชัน',
+    prompt: `- ใช้ภาษาดุดัน กระชับ เด็ดขาด มีพลังงาน
+- ประโยคสั้น ตรง เช่น "ไปซะ!" "สู้!" "ไม่มีทาง!"
+- ทับศัพท์ skills/techniques/system terms
+- Sound effects ให้แปลให้รู้สึกมีพลัง`
+  },
+  romance: {
+    label: '💕 Romance',
+    desc: 'โรแมนติก',
+    prompt: `- ใช้ภาษาหวาน โรแมนติก ซึ้ง อบอุ่น
+- รักษา tension ความรู้สึก ความเขิน ความหวาน
+- ไม่ใช้คำแข็งกระด้าง ให้นุ่มนวลและไหลลื่น
+- Blush/nervous moments ให้สื่ออารมณ์ได้ชัดเจน`
+  },
+  comedy: {
+    label: '😂 Comedy',
+    desc: 'ตลก',
+    prompt: `- รักษา timing และ punchline ของมุกตลก
+- ใช้ภาษาสนุกสนาน เฮฮา อาจมีแสลงเล็กน้อย
+- ถ้าแปลตรงแล้วไม่ขำ ให้ปรับให้เข้าใจในภาษาไทย
+- Exaggerated expressions ให้โอเวอร์ตามต้นฉบับ`
+  },
+  fantasy: {
+    label: '🔮 Fantasy',
+    desc: 'แฟนตาซี',
+    prompt: `- ทับศัพท์ skills/titles/places/system terms
+- ตัวละครสูงศักดิ์ใช้ภาษาทางการ ตัวละครธรรมดาใช้ภาษาปกติ
+- System messages/status ให้คงรูปแบบและดูอลังการ
+- บรรยากาศยิ่งใหญ่ เหนือจินตนาการ`
+  },
+  formal: {
+    label: '📋 ทางการ',
+    desc: 'วรรณกรรม',
+    prompt: `- ใช้ภาษาสุภาพ สละสลวย เป็นวรรณกรรม
+- ประโยคเรียบร้อย ไม่ใช้คำแสลงหรือภาษาปาก
+- รักษา nuance และอารมณ์ของต้นฉบับอย่างละเอียด`
+  },
+  custom: {
+    label: '✏️ Custom',
+    desc: 'กำหนดเอง',
+    prompt: ''
+  }
+};
+
+// เก็บ modes ที่เลือกไว้ (multi-select)
+let selectedModes = new Set(JSON.parse(localStorage.getItem('studio_modes') || '[]'));
+let studioGlossary = [];
+
+function initStudio() {
+  const saved = localStorage.getItem('studio_prompt');
+  if (saved) document.getElementById('studio-prompt').value = saved;
+  const savedGlossary = localStorage.getItem('studio_glossary');
+  if (savedGlossary) {
+    studioGlossary = JSON.parse(savedGlossary);
+    renderGlossary();
+  }
+  const savedModes = localStorage.getItem('studio_modes');
+  if (savedModes) {
+    selectedModes = new Set(JSON.parse(savedModes));
+  }
+  renderModeButtons();
+  updateModeIndicator();
+}
+
+function toggleStudio() {
+  const panel = document.getElementById('studio-panel');
+  const overlay = document.getElementById('studio-overlay');
+  const isOpen = panel.style.display === 'flex';
+  panel.style.display = isOpen ? 'none' : 'flex';
+  overlay.style.display = isOpen ? 'none' : 'block';
+  const btn = document.getElementById('btn-studio');
+  btn.style.background = isOpen ? 'var(--surface2)' : 'var(--accent)';
+  btn.style.color = isOpen ? 'var(--text)' : 'white';
+  btn.style.border = isOpen ? '1px solid var(--border)' : '1px solid var(--accent)';
+}
+
+function closeStudio() {
+  document.getElementById('studio-panel').style.display = 'none';
+  document.getElementById('studio-overlay').style.display = 'none';
+  const btn = document.getElementById('btn-studio');
+  btn.style.background = 'var(--surface2)';
+  btn.style.color = 'var(--text)';
+  btn.style.border = '1px solid var(--border)';
+  saveStudio();
+}
+
+function saveStudio() {
+  localStorage.setItem('studio_prompt', document.getElementById('studio-prompt').value);
+  localStorage.setItem('studio_glossary', JSON.stringify(studioGlossary));
+  localStorage.setItem('studio_modes', JSON.stringify([...selectedModes]));
+}
+
+function clearStudio() {
+  document.getElementById('studio-prompt').value = '';
+  studioGlossary = [];
+  selectedModes = new Set();
+  renderGlossary();
+  renderModeButtons();
+  updateModeIndicator();
+  localStorage.removeItem('studio_prompt');
+  localStorage.removeItem('studio_glossary');
+  localStorage.removeItem('studio_modes');
+  toast('\uD83D\uDDD1\uFE0F ล้าง Studio แล้วครับ', 'success');
+}
+
+function applyStudioMode(key) {
+  if (key === 'custom') {
+    // Custom — toggle ได้ ใช้ร่วมกับ mode อื่นใน combo ได้
+    if (selectedModes.has('custom')) {
+      selectedModes.delete('custom');
+      toast('✏️ Custom ปิดแล้วครับ', 'success');
+    } else {
+      selectedModes.add('custom');
+      const promptEl = document.getElementById('studio-prompt');
+      if (!promptEl.value.trim()) {
+        promptEl.placeholder = 'พิมพ์ context เพิ่มเติมของคุณเองได้เลยครับ...';
+      }
+      setTimeout(() => document.getElementById('studio-prompt').focus(), 100);
+      toast('✏️ Custom เปิดแล้ว — พิมพ์ context เพิ่มเติมได้เลยครับ', 'success');
+    }
+  } else {
+    // mode อื่น — toggle ปกติ ไม่กระทบ Custom
+    if (selectedModes.has(key)) {
+      selectedModes.delete(key);
+      toast(STUDIO_PRESETS[key].label + ' ปิดแล้วครับ', 'success');
+    } else {
+      selectedModes.add(key);
+      const labels = [...selectedModes]
+        .filter(k => STUDIO_PRESETS[k])
+        .map(k => STUDIO_PRESETS[k].label)
+        .join(' + ');
+      toast('✨ Combo: ' + labels, 'success');
+    }
+    // อัพเดต prompt เฉพาะส่วน mode (ไม่แตะ custom text)
+    updatePromptFromModes();
+  }
+  saveStudio();
+  renderModeButtons();
+  updateModeIndicator();
+}
+
+function updatePromptFromModes() {
+  // อัพเดตเฉพาะ modes section — ถ้ามี Custom ก็เก็บ text ที่พิมพ์ไว้ไว้ท้าย
+  const modes = [...selectedModes].filter(k => k !== 'custom' && STUDIO_PRESETS[k]);
+  const promptEl = document.getElementById('studio-prompt');
+
+  if (modes.length === 0 && !selectedModes.has('custom')) {
+    promptEl.value = '';
+    return;
+  }
+
+  // รวม mode prompts
+  const modeText = modes.map(k => STUDIO_PRESETS[k].prompt).join('\n');
+
+  if (selectedModes.has('custom')) {
+    // ถ้า Custom เปิดอยู่ → เก็บ text เดิมไว้ แค่ prepend mode prompts
+    const existingCustom = promptEl.value;
+    // ตัด mode prompts เก่าออกถ้ามี แล้วเอาแค่ส่วนที่ user พิมพ์เอง
+    promptEl.value = modeText ? modeText + '\n\n[เพิ่มเติม]:\n' + (existingCustom.includes('[เพิ่มเติม]:') ? existingCustom.split('[เพิ่มเติม]:')[1].trim() : existingCustom) : existingCustom;
+  } else {
+    promptEl.value = modeText;
+  }
+}
+
+function renderModeButtons() {
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    const key = btn.dataset.preset;
+    const isActive = selectedModes.has(key);
+    btn.style.background = isActive ? 'var(--accent)' : 'var(--surface2)';
+    btn.style.color = isActive ? 'white' : 'var(--text)';
+    btn.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
+    btn.style.boxShadow = isActive ? '0 2px 8px rgba(99,102,241,0.4)' : 'none';
+  });
+}
+
+function updateModeIndicator() {
+  const el = document.getElementById('studio-mode-indicator');
+  if (!el) return;
+  const modes = [...selectedModes].filter(k => STUDIO_PRESETS[k]);
+  if (modes.length === 0) { el.style.display = 'none'; return; }
+  const labels = modes.map(k => STUDIO_PRESETS[k].label).join(' + ');
+  el.textContent = 'โหมด: ' + labels;
+  el.style.display = 'block';
+}
+
+function highlightPreset(key) { renderModeButtons(); }
+
+function addGlossaryRow(kr='', th='') {
+  const id = Date.now();
+  studioGlossary.push({ id, kr, th });
+  renderGlossary();
+  saveStudio();
+}
+
+function removeGlossaryRow(id) {
+  studioGlossary = studioGlossary.filter(r => r.id !== id);
+  renderGlossary();
+  saveStudio();
+}
+
+function updateGlossary(id, field, value) {
+  const row = studioGlossary.find(r => r.id === id);
+  if (row) { row[field] = value; saveStudio(); }
+}
+
+function renderGlossary() {
+  const list = document.getElementById('glossary-list');
+  if (!list) return;
+  if (studioGlossary.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:12px;color:var(--text-dim);font-size:12px;">
+      ยังไม่มี Glossary — กด + เพิ่ม เพื่อเพิ่มคำศัพท์ครับ
+    </div>`;
+    return;
+  }
+  list.innerHTML = studioGlossary.map(row => `
+    <div style="display:flex;gap:6px;align-items:center;">
+      <input value="${row.kr.replace(/"/g,'&quot;')}" placeholder="คำเกาหลี"
+        oninput="updateGlossary(${row.id},'kr',this.value)"
+        style="flex:1;background:var(--surface2);border:1px solid var(--border);
+        border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;outline:none;" />
+      <span style="color:var(--text-dim);font-size:14px;">→</span>
+      <input value="${row.th.replace(/"/g,'&quot;')}" placeholder="คำแปลไทย"
+        oninput="updateGlossary(${row.id},'th',this.value)"
+        style="flex:1;background:var(--surface2);border:1px solid var(--border);
+        border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;outline:none;" />
+      <button onclick="removeGlossaryRow(${row.id})" style="
+        background:none;border:none;color:var(--text-dim);cursor:pointer;
+        font-size:16px;padding:2px 6px;border-radius:4px;transition:all .2s;
+      " onmouseover="this.style.color='#ef4444'"
+         onmouseout="this.style.color='var(--text-dim)'">×</button>
+    </div>
+  `).join('');
+}
+
+// Build system prompt สำหรับส่งไป Gemini
+function getStudioSystemPrompt() {
+  const prompt = (document.getElementById('studio-prompt')?.value || '').trim();
+  const glossaryLines = studioGlossary
+    .filter(r => r.kr && r.th)
+    .map(r => `${r.kr} → ${r.th}`)
+    .join('\n');
+
+  let system = '';
+  if (prompt) system += `[Context]: ${prompt}\n`;
+  if (glossaryLines) system += `[Glossary - ใช้คำแปลเหล่านี้ให้คงที่]:\n${glossaryLines}\n`;
+  return system.trim();
+}
+
+// Keyboard shortcut
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+    e.preventDefault();
+    toggleStudio();
+  }
+});
+
+// ========== MULTI-PAGE PROCESSING ==========
+let multiPanelOpen = false;
+let multiCancelled = false;
+
+// สถานะของแต่ละหน้า: 'none' | 'detected' | 'translated' | 'error'
+const MP_STATUS = {
+  none:       { icon: '⬜', label: 'รอดำเนินการ', cls: 'none' },
+  detected:   { icon: '🔍', label: 'Detect แล้ว', cls: 'detected' },
+  translated: { icon: '✅', label: 'แปลแล้ว',     cls: 'translated' },
+  error:      { icon: '❌', label: 'ผิดพลาด',     cls: 'error' },
+};
+
+function toggleMultiPanel() {
+  multiPanelOpen = !multiPanelOpen;
+  const popup   = document.getElementById('multi-popup');
+  const overlay = document.getElementById('multi-overlay');
+  const btn     = document.getElementById('btn-multi-toggle');
+  popup.style.display   = multiPanelOpen ? 'flex'  : 'none';
+  overlay.style.display = multiPanelOpen ? 'block' : 'none';
+  if(btn) {
+    btn.style.borderColor = multiPanelOpen ? 'var(--accent)' : 'var(--border)';
+    btn.style.color = multiPanelOpen ? 'var(--accent)' : 'var(--text-dim)';
+    btn.style.background = multiPanelOpen ? 'rgba(99,102,241,0.1)' : 'var(--surface2)';
+  }
+  if(multiPanelOpen) renderMultiPageList();
+}
+
+function renderMultiPageList() {
+  const list = document.getElementById('multi-page-list');
+  if(!list) return;
+  if(!state.pages.length) {
+    list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:11px;">อัพโหลดรูปก่อนครับ</div>`;
+    return;
+  }
+  list.innerHTML = state.pages.map((p, i) => {
+    const status = p.mpStatus || 'none';
+    const s = MP_STATUS[status];
+    const isActive = i === state.currentIndex;
+    return `<div class="mp-page-row${isActive?' active':''}" onclick="switchToPageMP(${i})">
+      <img class="mp-page-thumb" src="${p.dataUrl}" alt="หน้า ${i+1}">
+      <div class="mp-page-info">
+        <div class="mp-page-name">${p.name || `หน้า ${i+1}`}</div>
+        <span class="mp-status-badge ${s.cls}">${s.icon} ${s.label}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function switchToPageMP(index) {
+  // คลิก thumbnail ใน multi panel → switch หน้า
+  const thumbs = document.querySelectorAll('.page-thumb');
+  if(thumbs[index]) thumbs[index].click();
+  else { state.currentIndex = index; loadPage(index); }
+  renderMultiPageList();
+}
+
+function updateMPStatus(index, status) {
+  if(state.pages[index]) state.pages[index].mpStatus = status;
+  renderMultiPageList();
+  // อัพเดต progress bar
+  const done  = state.pages.filter(p => p.mpStatus === 'translated' || p.mpStatus === 'detected').length;
+  const total = state.pages.length;
+  const pct   = total > 0 ? (done / total * 100) : 0;
+  const bar   = document.getElementById('mp-progress-bar');
+  const count = document.getElementById('mp-progress-count');
+  if(bar)   bar.style.width = pct + '%';
+  if(count) count.textContent = `${done}/${total}`;
+}
+
+async function runMultiInpaint() {
+  if(!state.pages.length) { toast('อัพโหลดรูปก่อนครับ','error'); return; }
+  multiCancelled = false;
+  const btn = document.getElementById('btn-mp-inpaint');
+  const wrap = document.getElementById('mp-progress-wrap');
+  const label = document.getElementById('mp-progress-label');
+  const cancelBtn = document.getElementById('btn-mp-cancel');
+
+  btn.disabled = true;
+  if(wrap) wrap.style.display = 'block';
+  if(cancelBtn) cancelBtn.style.display = 'block';
+
+  let doneCount = 0;
+  for(let i = 0; i < state.pages.length; i++) {
+    if(multiCancelled) break;
+    // ข้ามหน้าที่ไม่มี boxes
+    const savedBoxes = state.pages[i]?.savedBoxes;
+    if(!savedBoxes?.length) continue;
+
+    await switchToPageAndWait(i);
+    if(label) label.textContent = `Inpaint หน้า ${i+1}/${state.pages.length}...`;
+
+    try {
+      // รอ inpaint เสร็จโดยใช้ runInpaint จาก sidebar ขวา
+      await runInpaint('anime');
+      // Save inpainted image กลับไปที่ page
+      const img = document.getElementById('base-img');
+      state.pages[i].dataUrl = img.src;
+      doneCount++;
+      // อัพเดต progress
+      const pct = state.pages.length > 0 ? (doneCount / state.pages.length * 100) : 0;
+      const bar = document.getElementById('mp-progress-bar');
+      const count = document.getElementById('mp-progress-count');
+      if(bar) bar.style.width = pct + '%';
+      if(count) count.textContent = `${doneCount}/${state.pages.length}`;
+    } catch(e) {
+      console.error(`Inpaint page ${i} error:`, e);
+    }
+  }
+
+  btn.disabled = false;
+  if(cancelBtn) cancelBtn.style.display = 'none';
+  if(label) label.textContent = multiCancelled ? 'ยกเลิกแล้วครับ' : `Inpaint เสร็จแล้วครับ! (${doneCount} หน้า)`;
+  if(!multiCancelled) toast(`✅ Inpaint ทุกหน้าเสร็จแล้วครับ (${doneCount} หน้า)`, 'success');
+}
+
+async function runMultiExport() {
+  if(!state.pages.length) { toast('อัพโหลดรูปก่อนครับ','error'); return; }
+  multiCancelled = false;
+  const btn = document.getElementById('btn-mp-export');
+  const wrap = document.getElementById('mp-progress-wrap');
+  const label = document.getElementById('mp-progress-label');
+  const cancelBtn = document.getElementById('btn-mp-cancel');
+
+  btn.disabled = true;
+  if(wrap) wrap.style.display = 'block';
+  if(cancelBtn) cancelBtn.style.display = 'block';
+
+  let doneCount = 0;
+  for(let i = 0; i < state.pages.length; i++) {
+    if(multiCancelled) break;
+    // ข้ามหน้าที่ยังไม่ได้แปล
+    if(!state.pages[i]?.savedBoxes?.length) continue;
+
+    await switchToPageAndWait(i);
+    if(label) label.textContent = `Export หน้า ${i+1}/${state.pages.length}...`;
+
+    try {
+      await exportPSD();
+      doneCount++;
+      const pct = state.pages.length > 0 ? (doneCount / state.pages.length * 100) : 0;
+      const bar = document.getElementById('mp-progress-bar');
+      const count = document.getElementById('mp-progress-count');
+      if(bar) bar.style.width = pct + '%';
+      if(count) count.textContent = `${doneCount}/${state.pages.length}`;
+      // รอสักครู่ระหว่าง export แต่ละหน้า
+      await new Promise(r => setTimeout(r, 1000));
+    } catch(e) {
+      console.error(`Export page ${i} error:`, e);
+    }
+  }
+
+  btn.disabled = false;
+  if(cancelBtn) cancelBtn.style.display = 'none';
+  if(label) label.textContent = multiCancelled ? 'ยกเลิกแล้วครับ' : `Export เสร็จแล้วครับ! (${doneCount} หน้า)`;
+  if(!multiCancelled) toast(`✅ Export ทุกหน้าเสร็จแล้วครับ (${doneCount} หน้า)`, 'success');
+}
+
+async function runMultiDetect() {
+  if(!state.pages.length) { toast('อัพโหลดรูปก่อนครับ','error'); return; }
+  multiCancelled = false;
+  const btn = document.getElementById('btn-mp-detect');
+  const wrap = document.getElementById('mp-progress-wrap');
+  const label = document.getElementById('mp-progress-label');
+  const cancelBtn = document.getElementById('btn-mp-cancel');
+
+  btn.disabled = true;
+  if(wrap) wrap.style.display = 'block';
+  if(cancelBtn) cancelBtn.style.display = 'block';
+  if(label) label.textContent = 'กำลัง Detect...';
+
+  for(let i = 0; i < state.pages.length; i++) {
+    if(multiCancelled) break;
+
+    // switch ไปหน้านั้น
+    await switchToPageAndWait(i);
+    if(label) label.textContent = `Detect หน้า ${i+1}/${state.pages.length}...`;
+    updateMPStatus(i, 'none');
+
+    try {
+      const img = document.getElementById('base-img');
+      if(!img || !img.naturalWidth) { updateMPStatus(i,'error'); continue; }
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      const imageData = canvas.toDataURL('image/jpeg',0.9).split(',')[1];
+
+      const res = await fetch('/api/mc_detect', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({image: imageData, threshold: 0.35})
+      });
+      const data = await res.json();
+      if(data.success && data.boxes?.length > 0) {
+        clearAllBoxes();
+        for(const b of data.boxes) createTextBox({x:b.x,y:b.y,w:b.w,h:b.h,text:'📖 รอ OCR...'});
+        enableTranslateBtn(); enableExport();
+        // Save boxes ไว้กับหน้านี้เพื่อให้กลับมาดู/แก้ไขได้
+        state.pages[i].savedBoxes = state.textBoxes.map(b => ({...b}));
+        state.pages[i].savedOcrResults = [...state.ocrResults];
+        updateMPStatus(i, 'detected');
+      } else {
+        updateMPStatus(i, 'error');
+      }
+    } catch(e) {
+      updateMPStatus(i, 'error');
+    }
+  }
+
+  btn.disabled = false;
+  if(cancelBtn) cancelBtn.style.display = 'none';
+  if(label) label.textContent = multiCancelled ? 'ยกเลิกแล้วครับ' : 'Detect เสร็จแล้วครับ!';
+  if(!multiCancelled) toast(`✅ Detect ทุกหน้าเสร็จแล้วครับ`, 'success');
+}
+
+async function runMultiTranslate() {
+  if(!state.pages.length) { toast('อัพโหลดรูปก่อนครับ','error'); return; }
+  multiCancelled = false;
+  const btn = document.getElementById('btn-mp-translate');
+  const wrap = document.getElementById('mp-progress-wrap');
+  const label = document.getElementById('mp-progress-label');
+  const cancelBtn = document.getElementById('btn-mp-cancel');
+
+  btn.disabled = true;
+  if(wrap) wrap.style.display = 'block';
+  if(cancelBtn) cancelBtn.style.display = 'block';
+  if(label) label.textContent = 'กำลัง OCR + แปล...';
+
+  for(let i = 0; i < state.pages.length; i++) {
+    if(multiCancelled) break;
+    // ข้ามหน้าที่แปลแล้วหรือไม่มี box
+    if(state.pages[i].mpStatus === 'translated') continue;
+
+    await switchToPageAndWait(i);
+    if(label) label.textContent = `OCR+แปล หน้า ${i+1}/${state.pages.length}...`;
+
+    try {
+      if(!state.textBoxes.length) { updateMPStatus(i,'error'); continue; }
+      await runOcrAndTranslate();
+      // Save boxes หลังแปลเสร็จ
+      state.pages[i].savedBoxes = state.textBoxes.map(b => ({...b}));
+      state.pages[i].savedOcrResults = [...state.ocrResults];
+      updateMPStatus(i, 'translated');
+    } catch(e) {
+      updateMPStatus(i, 'error');
+    }
+  }
+
+  btn.disabled = false;
+  if(cancelBtn) cancelBtn.style.display = 'none';
+  if(label) label.textContent = multiCancelled ? 'ยกเลิกแล้วครับ' : 'แปลเสร็จแล้วครับ!';
+  if(!multiCancelled) toast(`✅ แปลทุกหน้าเสร็จแล้วครับ`, 'success');
+}
+
+function cancelMulti() {
+  multiCancelled = true;
+  document.getElementById('btn-mp-cancel').style.display = 'none';
+}
+
+async function switchToPageAndWait(index) {
+  // Save boxes ของหน้าปัจจุบันก่อน switch
+  if(state.currentIndex >= 0 && state.currentIndex !== index) {
+    state.pages[state.currentIndex].savedBoxes = state.textBoxes.map(b => ({...b}));
+    state.pages[state.currentIndex].savedOcrResults = [...state.ocrResults];
+  }
+
+  if(state.currentIndex === index) return;
+  const thumbs = document.querySelectorAll('.page-thumb');
+  if(thumbs[index]) thumbs[index].click();
+  else { state.currentIndex = index; loadPage(index); }
+  await new Promise(r => setTimeout(r, 500));
+
+  // Restore boxes ของหน้าใหม่ถ้ามี saved
+  const saved = state.pages[index]?.savedBoxes;
+  if(saved?.length) {
+    clearAllBoxes();
+    state.ocrResults = state.pages[index].savedOcrResults || [];
+    for(const b of saved) {
+      createTextBox({...b});
+      const el = document.getElementById(b.id);
+      if(el) applyBoxStyle(el, b);
+    }
+    enableTranslateBtn(); enableExport();
+  }
+}
+
+// ========== GEMINI MODEL SELECTOR ==========
+let currentGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
+
+function initModelSelector() {
+  updateModelBadge(currentGeminiModel);
+  // sync ไปให้ backend ทันที รวมถึงตอน page load หลัง server restart
+  syncModelToBackend(currentGeminiModel);
+}
+
+function toggleModelDropdown() {
+  const dd = document.getElementById('model-dropdown');
+  if(dd) dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+function selectModel(model) {
+  currentGeminiModel = model;
+  localStorage.setItem('gemini_model', model);
+  updateModelBadge(model);
+  const dd = document.getElementById('model-dropdown');
+  if(dd) dd.style.display = 'none';
+  syncModelToBackend(model);
+  toast(`✦ เปลี่ยนเป็น ${model} แล้วครับ`, 'success');
+}
+
+function updateModelBadge(model) {
+  const badge = document.getElementById('model-badge-text');
+  if(badge) badge.textContent = model;
+  document.querySelectorAll('.model-opt').forEach(btn => {
+    const isActive = btn.id === `mopt-${model}`;
+    btn.style.background = isActive ? 'var(--accent)' : 'transparent';
+    btn.style.color = isActive ? 'white' : 'var(--text)';
+  });
+}
+
+async function syncModelToBackend(model) {
+  try {
+    await fetch('/api/set_gemini_model', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ model })
+    });
+  } catch(e) { console.warn('Model sync:', e); }
+}
+
+// ปิด dropdown เมื่อคลิกข้างนอก
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('model-dropdown');
+  const btn = document.getElementById('btn-model-selector');
+  if(dd && btn && !dd.contains(e.target) && !btn.contains(e.target))
+    dd.style.display = 'none';
+});
+
+// ========== BOX SHAPE ==========
+let currentShape = 'rect'; // global default shape
+
+function setBoxShape(shape){
+  currentShape = shape;
+  // อัพเดต button UI
+  document.getElementById('btn-shape-rect').style.background = shape==='rect' ? 'var(--accent)' : 'var(--surface2)';
+  document.getElementById('btn-shape-rect').style.color = shape==='rect' ? 'white' : 'var(--text-dim)';
+  document.getElementById('btn-shape-rect').style.border = shape==='rect' ? 'none' : '1px solid var(--border)';
+  document.getElementById('btn-shape-circle').style.background = shape==='circle' ? 'var(--accent)' : 'var(--surface2)';
+  document.getElementById('btn-shape-circle').style.color = shape==='circle' ? 'white' : 'var(--text-dim)';
+  document.getElementById('btn-shape-circle').style.border = shape==='circle' ? 'none' : '1px solid var(--border)';
+
+  // ถ้ามี box selected → เปลี่ยน shape ทันที
+  if(state.selectedBox){
+    const box = state.textBoxes.find(b => b.id === state.selectedBox);
+    if(box){
+      box.shape = shape;
+      const el = document.getElementById(box.id);
+      if(el) applyBoxStyle(el, box);
+      saveHistory();
+    }
+  }
+}
+const customFonts = [];
+
+function addFontToDropdowns(fontName){
+  ['font-family', 'setting-font'].forEach(id => {
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    if(!Array.from(sel.options).find(o => o.value === fontName)){
+      sel.appendChild(new Option(fontName, fontName));
+    }
+  });
+}
+
+// โหลดฟอนต์จาก folder fonts/ ตอน startup
+async function loadFontsFromFolder(){
+  try{
+    const res = await fetch('/api/list_fonts');
+    const data = await res.json();
+    if(!data.fonts || !data.fonts.length) return;
+    for(const filename of data.fonts){
+      const fontName = filename.replace(/\.[^.]+$/, '');
+      if(customFonts.find(f => f.name === fontName)) continue;
+      try{
+        const fontFace = new FontFace(fontName, `url('/fonts/${encodeURIComponent(filename)}')`);
+        const loaded = await fontFace.load();
+        document.fonts.add(loaded);
+        customFonts.push({name: fontName, filename, enabled: true});
+        addFontToDropdowns(fontName);
+        console.log(`[Font] Folder loaded: ${fontName}`);
+      } catch(e){ console.warn(`[Font] Skip ${filename}:`, e); }
+    }
+    if(customFonts.length > 0)
+      toast(`✅ โหลดฟอนต์จาก folder ${customFonts.length} ไฟล์ครับ`, 'success');
+  } catch(e){ console.warn('[Font] Folder load failed:', e); }
+}
+
+async function loadCustomFonts(files){
+  let loaded = 0;
+  for(const file of files){
+    const fontName = file.name.replace(/\.[^.]+$/, '');
+    if(customFonts.find(f => f.name === fontName)) continue;
+    try{
+      const buffer = await file.arrayBuffer();
+      const fontFace = new FontFace(fontName, buffer);
+      const loadedFace = await fontFace.load();
+      document.fonts.add(loadedFace);
+      await document.fonts.ready;
+      customFonts.push({name: fontName, filename: file.name, enabled: true});
+      addFontToDropdowns(fontName);
+      loaded++;
+      console.log(`[Font] Loaded: ${fontName}`);
+    } catch(e){
+      console.error(`[Font] Failed: ${fontName}`, e);
+      toast(`❌ โหลดฟอนต์ ${fontName} ไม่ได้ครับ`, 'error');
+    }
+  }
+  renderCustomFontList();
+  if(loaded > 0) toast(`✅ โหลดฟอนต์สำเร็จ ${loaded} ไฟล์ครับ`, 'success');
+}
+
+function toggleCustomFont(index){
+  const f = customFonts[index];
+  if(!f) return;
+  f.enabled = !f.enabled;
+  ['font-family', 'setting-font'].forEach(id => {
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    if(f.enabled){
+      if(!Array.from(sel.options).find(o => o.value === f.name))
+        sel.appendChild(new Option(f.name, f.name));
+    } else {
+      const opt = Array.from(sel.options).find(o => o.value === f.name);
+      if(opt) opt.remove();
+    }
+  });
+  renderCustomFontList();
+}
+
+function removeCustomFont(index){
+  const f = customFonts[index];
+  if(!f) return;
+  ['font-family', 'setting-font'].forEach(id => {
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    const opt = Array.from(sel.options).find(o => o.value === f.name);
+    if(opt) opt.remove();
+  });
+  customFonts.splice(index, 1);
+  renderCustomFontList();
+}
+
+function renderCustomFontList(){
+  const list = document.getElementById('custom-font-list');
+  if(!list) return;
+  if(!customFonts.length){
+    list.innerHTML = '<div style="font-size:11px;color:var(--text-dim);text-align:center;padding:8px;">ยังไม่มีฟอนต์ที่โหลดครับ</div>';
+    return;
+  }
+  list.innerHTML = customFonts.map((f, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);">
+      <input type="checkbox" ${f.enabled?'checked':''} onchange="toggleCustomFont(${i})"
+        style="width:14px;height:14px;cursor:pointer;accent-color:var(--accent);">
+      <span style="flex:1;font-size:14px;font-family:'${f.name}',sans-serif;color:var(--text);">${f.name}</span>
+      <span style="font-size:11px;color:var(--text-dim);font-family:'${f.name}',sans-serif;">ตัวอย่าง Aa</span>
+      <button onclick="removeCustomFont(${i})" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;">🗑️</button>
+    </div>
+  `).join('');
+}
+
+// ========== FONT PRESETS ==========
+const fontPresets = [null, null, null]; // 3 slots
+
+function getCurrentFontStyle() {
+  return {
+    font: document.getElementById('font-family').value,
+    size: parseInt(document.getElementById('font-size').value),
+    color: document.getElementById('font-color').value,
+    bgColor: document.getElementById('bg-color').value,
+    bgOpacity: parseInt(document.getElementById('bg-opacity').value),
+    strokeWidth: parseInt(document.getElementById('stroke-width').value) || 0,
+    strokeColor: document.getElementById('stroke-color').value,
+    lineHeightMode: document.getElementById('line-height-mode').value,
+    lineHeight: parseFloat(document.getElementById('line-height-val').value) || 1.4
+  };
+}
+
+function applyFontStyle(style) {
+  document.getElementById('font-family').value = style.font;
+  document.getElementById('font-size').value = style.size;
+  document.getElementById('font-color').value = style.color;
+  document.getElementById('bg-color').value = style.bgColor;
+  document.getElementById('bg-opacity').value = style.bgOpacity;
+  document.getElementById('opacity-val').textContent = style.bgOpacity + '%';
+  document.getElementById('stroke-width').value = style.strokeWidth;
+  document.getElementById('stroke-color').value = style.strokeColor;
+  document.getElementById('line-height-mode').value = style.lineHeightMode;
+  document.getElementById('line-height-val').value = style.lineHeight;
+  toggleLineHeightInput();
+  if(state.selectedBox) updateSelectedBox();
+}
+
+function savePreset(index) {
+  fontPresets[index] = getCurrentFontStyle();
+  // บันทึกลง localStorage
+  localStorage.setItem('hexqine_presets', JSON.stringify(fontPresets));
+  updatePresetButtons();
+  toast(`💾 บันทึก Preset F${index+1} แล้วครับ`, 'success');
+}
+
+function applyFontPreset(index) {
+  if(!fontPresets[index]) {
+    toast(`⚠️ ยังไม่มี Preset F${index+1} ครับ กด 💾 เพื่อบันทึกก่อนครับ`, 'error');
+    return;
+  }
+  applyFontStyle(fontPresets[index]);
+  toast(`✦ ใช้ Preset F${index+1} แล้วครับ`, 'success');
+}
+
+function updatePresetButtons() {
+  // ไม่มี preset-btn elements แล้ว แค่ update tooltip
+  fontPresets.forEach((preset, i) => {
+    // หาปุ่ม 💾 F1/F2/F3 โดย title
+    const btns = document.querySelectorAll(`button[title="บันทึก F${i+1}"]`);
+    btns.forEach(btn => {
+      if(preset){
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.color = 'var(--accent)';
+        btn.title = `F${i+1}: ${preset.font.split(' ')[0]} ${preset.size}px`;
+      } else {
+        btn.style.borderColor = 'var(--border)';
+        btn.style.color = 'var(--text-dim)';
+        btn.title = `บันทึก F${i+1}`;
+      }
+    });
+  });
+}
+
+function loadPresetsFromStorage() {
+  try {
+    const saved = localStorage.getItem('hexqine_presets');
+    if(saved) {
+      const parsed = JSON.parse(saved);
+      parsed.forEach((p, i) => { if(p) fontPresets[i] = p; });
+      updatePresetButtons();
+    }
+  } catch(e) {}
+}
+
+// ========== SETTINGS POPUP ==========
+function toggleSettingsPopup(){
+  const popup = document.getElementById('settings-popup');
+  const isOpen = popup.style.display !== 'none';
+  if(isOpen){
+    popup.style.display = 'none';
+  } else {
+    document.getElementById('setting-font').value = document.getElementById('font-family').value;
+    document.getElementById('setting-size').value = document.getElementById('font-size').value;
+    document.getElementById('setting-color').value = document.getElementById('font-color').value;
+    document.getElementById('setting-stroke').value = document.getElementById('stroke-width').value;
+    document.getElementById('setting-stroke-color').value = document.getElementById('stroke-color').value;
+    renderCustomFontList();
+    popup.style.display = 'block';
+  }
+}
+
+function applySettings(){
+  // Apply ค่าจาก settings ลงในแถบเครื่องมือ
+  document.getElementById('font-family').value = document.getElementById('setting-font').value;
+  document.getElementById('font-size').value = document.getElementById('setting-size').value;
+  document.getElementById('font-color').value = document.getElementById('setting-color').value;
+  document.getElementById('stroke-width').value = document.getElementById('setting-stroke').value;
+  document.getElementById('stroke-color').value = document.getElementById('setting-stroke-color').value;
+
+  // ถ้ามี box ที่เลือกอยู่ ให้ update ด้วย
+  if(state.selectedBox) updateSelectedBox();
+
+  toggleSettingsPopup();
+  toast('✅ บันทึกการตั้งค่าแล้วครับ', 'success');
+}
+
+// ปิด popup เมื่อคลิกนอก popup
+document.addEventListener('click', e => {
+  const popup = document.getElementById('settings-popup');
+  const btn = document.getElementById('btn-settings');
+  if(popup && popup.style.display !== 'none'){
+    if(!popup.contains(e.target) && e.target !== btn && !btn.contains(e.target)){
+      popup.style.display = 'none';
+    }
+  }
+});
+
+function updateOpacityLabel(){
+  document.getElementById('opacity-val').textContent=document.getElementById('bg-opacity').value+'%';
+}
+
+// ========== DRAG / RESIZE (ใน natural image coords) ==========
+function makeDraggable(el,box){
+  el.addEventListener('mousedown',e=>{
+    if(e.target.classList.contains('resize-handle')||e.target.classList.contains('delete-btn')) return;
+    e.preventDefault(); e.stopPropagation();
+    const startX=e.clientX,startY=e.clientY;
+    const startL=box.x,startT=box.y;
+    const onMove=e=>{
+      const dx=(e.clientX-startX)/state.scale;
+      const dy=(e.clientY-startY)/state.scale;
+      box.x=startL+dx; box.y=startT+dy;
+      el.style.left=box.x+'px'; el.style.top=box.y+'px';
+    };
+    const onUp=()=>{document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);};
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',onUp);
+  });
+}
+
+function makeResizable(el, box, handle){
+  // SE handle (เดิม)
+  handle.addEventListener('mousedown', e=>{
+    e.preventDefault(); e.stopPropagation();
+    const startX=e.clientX, startY=e.clientY, startW=box.w, startH=box.h;
+    const onMove=e=>{
+      box.w=Math.max(50, startW+(e.clientX-startX)/state.scale);
+      box.h=Math.max(24, startH+(e.clientY-startY)/state.scale);
+      el.style.width=box.w+'px'; el.style.height=box.h+'px';
+    };
+    const onUp=()=>{
+      document.removeEventListener('mousemove',onMove);
+      document.removeEventListener('mouseup',onUp);
+      saveHistory();
+    };
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',onUp);
+  });
+
+  // Corner handles ทั้ง 4 มุม
+  el.querySelectorAll('.corner').forEach(corner=>{
+    corner.addEventListener('mousedown', e=>{
+      e.preventDefault(); e.stopPropagation();
+      const pos = corner.dataset.corner;
+      const startX=e.clientX, startY=e.clientY;
+      const startW=box.w, startH=box.h, startBX=box.x, startBY=box.y;
+
+      const onMove=e=>{
+        const dx = (e.clientX-startX)/state.scale;
+        const dy = (e.clientY-startY)/state.scale;
+        if(pos==='se'){
+          box.w=Math.max(50, startW+dx);
+          box.h=Math.max(24, startH+dy);
+        } else if(pos==='sw'){
+          box.x=startBX+dx; box.w=Math.max(50, startW-dx);
+          box.h=Math.max(24, startH+dy);
+        } else if(pos==='ne'){
+          box.w=Math.max(50, startW+dx);
+          box.y=startBY+dy; box.h=Math.max(24, startH-dy);
+        } else if(pos==='nw'){
+          box.x=startBX+dx; box.w=Math.max(50, startW-dx);
+          box.y=startBY+dy; box.h=Math.max(24, startH-dy);
+        }
+        el.style.left=box.x+'px'; el.style.top=box.y+'px';
+        el.style.width=box.w+'px'; el.style.height=box.h+'px';
+      };
+      const onUp=()=>{
+        document.removeEventListener('mousemove',onMove);
+        document.removeEventListener('mouseup',onUp);
+        saveHistory();
+      };
+      document.addEventListener('mousemove',onMove);
+      document.addEventListener('mouseup',onUp);
+    });
+  });
+}
+
+// ========== API ==========
+async function apiOCRWithPositions(imageDataUrl, imgW, imgH){
+  const base64=imageDataUrl.split(',')[1];
+  const mimeType=imageDataUrl.split(';')[0].split(':')[1];
+  const res=await fetch('/api/ocr_with_positions',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({image:base64, mime_type:mimeType, width:imgW, height:imgH})
+  });
+  const data=await res.json();
+  if(!data.success) throw new Error(data.error);
+  return data.results;
+}
+
+async function apiTranslate(texts){
+  const res=await fetch('/api/translate',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({texts, studio_prompt: getStudioSystemPrompt()})
+  });
+  const data=await res.json();
+  if(!data.success) throw new Error(data.error);
+  return data.translations;
+}
+
+// ========== INPAINT ==========
+async function runInpaint(mode){
+  if(!validate()) return;
+
+  // inpaint ทุก box ที่มีอยู่ — ไม่จำกัดเฉพาะ box ที่มี korean
+  const boxesWithKorean = state.textBoxes.filter(b => b.w > 0 && b.h > 0);
+  if(!boxesWithKorean.length){
+    toast('กรุณาวาดกรอบก่อนครับ','error'); return;
+  }
+
+  const img = document.getElementById('base-img');
+  const canvas = document.createElement('canvas');
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  const imageData = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+  const fillColor = document.getElementById('inpaint-color').value;
+
+  const btnIds = {'anime':'btn-inpaint-anime','lama':'btn-inpaint-lama','auto':'btn-inpaint-auto','color':'btn-inpaint-color'};
+  const btn = document.getElementById(btnIds[mode]);
+  const origHTML = btn ? btn.innerHTML : '';
+  if(btn){ btn.innerHTML = '<div class="spinner"></div>'; btn.disabled = true; }
+
+  const modeLabel = mode==='anime' ? '🎌 Anime/Manga AI' : mode==='lama' ? '🤖 LaMa AI' : mode==='auto' ? '✨ Auto สี' : '🎨 สีที่เลือก';
+
+  // เริ่มจับเวลา
+  const startTime = Date.now();
+
+  // แสดง timer popup แบบ live
+  showTimerPopup(modeLabel);
+
+  try{
+    const boxes = boxesWithKorean.map(b => ({
+      x:b.x, y:b.y, w:b.w, h:b.h,
+      shape: b.shape || 'rect',
+      // ใช้ customMask ถ้ามี (user วาดเอง) → fallback polygon → fallback null (rectangle)
+      polygon: b.customMask || b.polygon || null
+    }));
+    const res = await fetch('/api/inpaint', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ image: imageData, mime_type: 'image/jpeg', boxes, mode, color: fillColor })
+    });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error);
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+    const newDataUrl = `data:${data.mime_type};base64,${data.image}`;
+    document.getElementById('base-img').src = newDataUrl;
+    if(state.currentIndex >= 0) state.pages[state.currentIndex].dataUrl = newDataUrl;
+
+    // ลบ mask overlays ของ boxes ที่ inpaint แล้ว
+    boxesWithKorean.forEach(b => removeMaskOverlay(b.id));
+
+    // แสดง popup สรุปเวลา
+    showResultPopup(modeLabel, boxes.length, elapsed);
+
+  } catch(e){
+    hideTimerPopup();
+    toast('❌ Inpaint ล้มเหลว: '+e.message, 'error');
+  } finally {
+    if(btn){ btn.innerHTML = origHTML; btn.disabled = false; }
+  }
+}
+
+// ========== TIMER POPUP ==========
+let timerInterval = null;
+let timerPopupEl = null;
+
+function showTimerPopup(modeLabel){
+  hideTimerPopup();
+  const el = document.createElement('div');
+  el.id = 'timer-popup';
+  el.style.cssText = `
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: var(--surface); border: 1px solid var(--accent);
+    border-radius: 16px; padding: 28px 36px; z-index: 9999;
+    text-align: center; min-width: 280px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,107,53,0.2);
+    backdrop-filter: blur(12px);
+    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  `;
+  el.innerHTML = `
+    <style>
+      @keyframes popIn { from { opacity:0; transform:translate(-50%,-50%) scale(0.8); } to { opacity:1; transform:translate(-50%,-50%) scale(1); } }
+      @keyframes spin2 { to { transform: rotate(360deg); } }
+      .timer-spinner { width:48px; height:48px; border:4px solid rgba(255,107,53,0.2); border-top-color:var(--accent); border-radius:50%; animation:spin2 0.8s linear infinite; margin:0 auto 16px; }
+    </style>
+    <div class="timer-spinner"></div>
+    <div style="font-size:14px;color:var(--text-dim);margin-bottom:8px;">${modeLabel}</div>
+    <div style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">กำลัง Inpaint...</div>
+    <div id="timer-display" style="font-family:'Space Mono',monospace;font-size:36px;font-weight:700;color:var(--accent);">0.0s</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-top:8px;">กรุณารอสักครู่ครับ</div>
+  `;
+  document.body.appendChild(el);
+  timerPopupEl = el;
+
+  // อัพเดต timer ทุก 100ms
+  const startTime = Date.now();
+  timerInterval = setInterval(() => {
+    const el = document.getElementById('timer-display');
+    if(el) el.textContent = ((Date.now() - startTime) / 1000).toFixed(1) + 's';
+  }, 100);
+}
+
+function hideTimerPopup(){
+  if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+  const el = document.getElementById('timer-popup');
+  if(el) el.remove();
+  timerPopupEl = null;
+}
+
+function showResultPopup(modeLabel, boxCount, elapsed){
+  hideTimerPopup();
+  const el = document.createElement('div');
+  el.id = 'result-popup';
+  el.style.cssText = `
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: var(--surface); border: 1px solid var(--success);
+    border-radius: 16px; padding: 28px 36px; z-index: 9999;
+    text-align: center; min-width: 280px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(74,222,128,0.2);
+    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  `;
+  el.innerHTML = `
+    <div style="font-size:48px;margin-bottom:12px;">✅</div>
+    <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Inpaint สำเร็จ!</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">${modeLabel} — ${boxCount} กรอบ</div>
+    <div style="font-family:'Space Mono',monospace;font-size:42px;font-weight:700;color:var(--success);">${elapsed}s</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-top:6px;margin-bottom:20px;">เวลาที่ใช้</div>
+    <button onclick="document.getElementById('result-popup').remove()" style="
+      background:var(--accent);border:none;border-radius:8px;
+      padding:8px 24px;color:white;font-family:'Noto Sans Thai',sans-serif;
+      font-size:13px;font-weight:700;cursor:pointer;
+    ">ตกลง</button>
+  `;
+  document.body.appendChild(el);
+  // ปิดอัตโนมัติหลัง 5 วินาที
+  setTimeout(() => { const e = document.getElementById('result-popup'); if(e) e.remove(); }, 5000);
+}
+
+// ========== OCR เฉพาะกรอบที่วาด ==========
+// ========== OCR QUEUE — ส่ง OCR ทีละอัน ไม่ rate limit ==========
+const ocrQueue = [];
+let ocrRunning = false;
+
+function queueOcr(box){
+  // แสดง loading ทันที
+  box.text = '⏳ รอคิว...';
+  const el = document.getElementById(box.id);
+  if(el) applyBoxStyle(el, box);
+  ocrQueue.push(box);
+  processOcrQueue();
+}
+
+async function processOcrQueue(){
+  if(ocrRunning || ocrQueue.length === 0) return;
+  ocrRunning = true;
+
+  while(ocrQueue.length > 0){
+    const box = ocrQueue.shift();
+    // ตรวจว่า box ยังอยู่ในรายการ (อาจถูกลบไปแล้ว)
+    if(!state.textBoxes.find(b => b.id === box.id)){
+      continue;
+    }
+    await ocrSingleBox(box);
+    // หน่วงเล็กน้อยระหว่าง request เพื่อไม่ให้ rate limit
+    if(ocrQueue.length > 0) await new Promise(r => setTimeout(r, 300));
+  }
+
+  ocrRunning = false;
+}
+
+async function ocrSingleBox(box){
+  try{
+    box.text = '⏳ กำลังอ่าน...';
+    const el0 = document.getElementById(box.id);
+    if(el0) applyBoxStyle(el0, box);
+
+    const img = document.getElementById('base-img');
+    const canvas = document.createElement('canvas');
+    canvas.width = box.w;
+    canvas.height = box.h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+    const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    const base64 = croppedDataUrl.split(',')[1];
+
+    const res = await fetch('/api/ocr_crop', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({image: base64, mime_type: 'image/jpeg'})
+    });
+    const data = await res.json();
+
+    if(data.success && data.text){
+      box.text = data.text;
+      box.korean = data.text;
+      const el = document.getElementById(box.id);
+      if(el) applyBoxStyle(el, box);
+      const existing = state.ocrResults.find(r => r.id === box.id);
+      if(existing){ existing.korean = data.text; }
+      else { state.ocrResults.push({id: box.id, korean: data.text, thai: ''}); }
+      enableTranslateBtn();
+      if(state.selectedBox === box.id){
+        document.getElementById('selected-korean').value = box.korean || '';
+      }
+
+      // แปลทันทีหลัง OCR เสร็จ (เฉพาะกรณีวาดกรอบเอง ไม่ใช่ auto detect)
+      if(box._autoOcr){
+        // auto detect → ไม่ auto-แปล รอกด OCR+แปลทีเดียว
+        box.text = data.text;
+        const el2 = document.getElementById(box.id);
+        if(el2) applyBoxStyle(el2, box);
+        renderBalloonList();
+        toast('✅ อ่านสำเร็จ', 'success');
+      } else {
+        // วาดกรอบเอง → auto-แปลทันที
+        try{
+          const tRes = await fetch('/api/translate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({texts: [data.text], studio_prompt: getStudioSystemPrompt()})
+          });
+          const tData = await tRes.json();
+          if(tData.success && tData.translations?.[0]){
+            const thai = tData.translations[0];
+            box.text = thai;
+            const ocrR = state.ocrResults.find(r => r.id === box.id);
+            if(ocrR) ocrR.thai = thai;
+            if(state.selectedBox === box.id){
+              document.getElementById('selected-thai').value = thai;
+            }
+          } else {
+            box.text = data.text;
+          }
+        } catch(te){
+          box.text = data.text;
+        }
+        const el3 = document.getElementById(box.id);
+        if(el3) applyBoxStyle(el3, box);
+        renderBalloonList();
+        toast('✅ อ่านและแปลสำเร็จ', 'success');
+      }
+    } else {
+      box.text = '❌ อ่านไม่ได้';
+      const el = document.getElementById(box.id);
+      if(el) applyBoxStyle(el, box);
+      toast('❌ อ่านไม่ได้: ' + (data.error||''), 'error');
+    }
+  } catch(e){
+    box.text = '❌ Error';
+    const el = document.getElementById(box.id);
+    if(el) applyBoxStyle(el, box);
+    toast('❌ OCR ล้มเหลว: '+e.message, 'error');
+  }
+}
+
+// ========== WORKFLOWS ==========
+async function runDetectVersion(version){
+  if(!validate()) return;
+  const btnId = `btn-detect-v${version}`;
+  const btn = document.getElementById(btnId);
+  const origHTML = btn.innerHTML;
+  btn.innerHTML = `<div class="spinner"></div>`;
+  btn.disabled = true;
+  setProcessing(true);
+
+  try{
+    const img = document.getElementById('base-img');
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    const imageData = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+
+    const res = await fetch(`/api/detect_v${version}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ image: imageData, mime_type: 'image/jpeg', conf: 0.3 })
+    });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error);
+    if(!data.boxes || data.boxes.length === 0){
+      toast(`⚠️ v${version}: ไม่พบ text region ครับ`, 'error');
+      return;
+    }
+
+    clearAllBoxes();
+    toast(`v${version}: พบ ${data.boxes.length} boxes — กด OCR+แปล ได้เลยครับ`, 'success');
+    for(const b of data.boxes){
+      const bubbleBox = (b.bubble_x !== undefined) ? {
+        x: b.bubble_x, y: b.bubble_y, w: b.bubble_w, h: b.bubble_h
+      } : null;
+      createTextBox({x: b.x, y: b.y, w: b.w, h: b.h, text: '📖 รอ OCR...', bubbleBox});
+    }
+    setStep('box', 'done');
+    enableTranslateBtn();
+    enableExport();
+
+  } catch(e){
+    toast(`❌ v${version} ล้มเหลว: ` + e.message, 'error');
+  } finally{
+    btn.innerHTML = origHTML;
+    btn.disabled = false;
+    setProcessing(false);
+  }
+}
+
+async function runMCDetect(){
+  if(!validate()) return;
+  const btn = document.getElementById('btn-mc-detect');
+  const origHTML = btn.innerHTML;
+  btn.innerHTML = '<div class="spinner"></div> MC กำลัง detect...';
+  btn.disabled = true;
+  setProcessing(true);
+
+  try{
+    const img = document.getElementById('base-img');
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    const imageData = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+
+    const res = await fetch('/api/mc_detect', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ image: imageData, threshold: 0.3 })
+    });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error);
+    if(!data.boxes || data.boxes.length === 0){
+      toast('⚠️ MC: ไม่พบข้อความในรูปครับ', 'error'); return;
+    }
+
+    clearAllBoxes();
+    for(const b of data.boxes){
+      createTextBox({x: b.x, y: b.y, w: b.w, h: b.h, text: '📖 รอ OCR...'});
+    }
+    setStep('box','done'); enableTranslateBtn(); enableExport();
+    toast(`🧹 MC Detect พบ ${data.boxes.length} กล่อง — กด OCR+แปล ได้เลยครับ`, 'success');
+
+  } catch(e){
+    toast('❌ MC Detect ล้มเหลว: ' + e.message, 'error');
+  } finally{
+    btn.innerHTML = origHTML; btn.disabled = false; setProcessing(false);
+  }
+}
+
+async function runYoloDetect(){
+  if(!validate()) return;
+  const btn = document.getElementById('btn-yolo-detect');
+  const origHTML = btn.innerHTML;
+  btn.innerHTML = '<div class="spinner"></div> กำลัง Detect...';
+  btn.disabled = true;
+  setProcessing(true);
+
+  try{
+    const img = document.getElementById('base-img');
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    const imageData = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+
+    const res = await fetch('/api/detect_bubbles', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ image: imageData, mime_type: 'image/jpeg', conf: 0.3 })
+    });
+    const data = await res.json();
+
+    if(!data.success) throw new Error(data.error);
+    if(!data.boxes || data.boxes.length === 0){
+      toast('⚠️ ไม่พบ speech bubble ในรูปครับ ลองปรับ threshold หรือใช้ Auto Detect แทนครับ', 'error');
+      return;
+    }
+
+    // ลบ boxes เดิมออกก่อน
+    clearAllBoxes();
+
+    // สร้างกรอบเฉยๆ ไม่ OCR ทันที
+    toast(`🤖 พบ ${data.boxes.length} bubble กรอบพร้อมแล้วครับ กด 📖 OCR + แปล ได้เลยครับ`, 'success');
+    for(const b of data.boxes){
+      createTextBox({x: b.x, y: b.y, w: b.w, h: b.h, text: '📖 รอ OCR...'});
+    }
+
+    setStep('box', 'done');
+    enableTranslateBtn();
+    enableExport();
+
+  } catch(e){
+    toast('❌ YOLO Detect ล้มเหลว: ' + e.message, 'error');
+  } finally{
+    btn.innerHTML = origHTML;
+    btn.disabled = false;
+    setProcessing(false);
+  }
+}
+
+async function runDetect(){
+  if(!validate()) return;
+  setProcessing(true); setStep('ocr','active');
+  try{
+    const page=state.pages[state.currentIndex];
+    const img=document.getElementById('base-img');
+    const imgW=img.naturalWidth, imgH=img.naturalHeight;
+    toast('🔍 กำลัง Detect + OCR...','success');
+    const results=await apiOCRWithPositions(page.dataUrl, imgW, imgH);
+    if(!results||results.length===0){
+      toast('❌ ไม่พบข้อความเกาหลีในรูปนี้ครับ','error');
+      setStep('ocr','idle'); return;
+    }
+    state.ocrResults=results.map(r=>({korean:r.korean, thai:'', x:r.x, y:r.y, w:r.w, h:r.h}));
+    clearAllBoxes();
+    const pad=4;
+    results.forEach(r=>{
+      createTextBox({
+        x:r.x+pad, y:r.y+pad,
+        w:Math.max(60,r.w-pad*2),
+        h:Math.max(30,r.h-pad*2),
+        text:r.korean, korean:r.korean
+      });
+    });
+    document.getElementById('source-text').value=results.map(r=>r.korean).join('\n---\n');
+    setStep('ocr','done'); setStep('box','done');
+    enableTranslateBtn(); renderBalloonList(); enableExport();
+    toast(`🔍 พบ ${results.length} Balloon วาง Box แล้วครับ!`,'success');
+  }catch(e){
+    setStep('ocr','idle');
+    toast('❌ Detect ล้มเหลว: '+e.message,'error');
+  }finally{setProcessing(false);}
+}
+
+async function runOcrAndTranslate(){
+  if(!validate()) return;
+
+  const boxes = state.textBoxes.filter(b => !b.korean || b.korean === '');
+  if(!boxes.length){
+    await runTranslate();
+    return;
+  }
+
+  const btn = document.getElementById('btn-translate');
+  const origHTML = btn.innerHTML;
+  btn.innerHTML = `<div class="spinner"></div> OCR + แปล ${boxes.length} กรอบ...`;
+  btn.disabled = true;
+  setProcessing(true);
+
+  const img = document.getElementById('base-img');
+  let doneCount = 0;
+
+  try{
+    // OCR ทุก box พร้อมกันหมดเลย แล้วค่อย translate ทีเดียว
+    btn.innerHTML = `<div class="spinner"></div> OCR ${boxes.length} กรอบพร้อมกัน...`;
+
+    const ocrResults = await Promise.all(boxes.map(async (box) => {
+      try{
+        box.text = '⏳...';
+        const el = document.getElementById(box.id);
+        if(el) applyBoxStyle(el, box);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = box.w; canvas.height = box.h;
+        canvas.getContext('2d').drawImage(img, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+        const imageData = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+
+        const ocrRes = await fetch('/api/ocr_crop', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({image: imageData, mime_type: 'image/jpeg'})
+        });
+        const ocrData = await ocrRes.json();
+        const korean = ocrData.success && ocrData.text ? ocrData.text : '';
+        box.korean = korean;
+
+        const existing = state.ocrResults.find(r => r.id === box.id);
+        if(existing) existing.korean = korean;
+        else state.ocrResults.push({id: box.id, korean, thai: ''});
+
+        return {box, korean};
+      } catch(e){
+        box.text = '❌';
+        return {box, korean: ''};
+      }
+    }));
+
+    // กรองเฉพาะที่ OCR สำเร็จ
+    const toTranslate = ocrResults.filter(r => r.korean);
+
+    if(toTranslate.length === 0){
+      toast('⚠️ ไม่พบข้อความในกรอบครับ', 'error');
+      return;
+    }
+
+    btn.innerHTML = `<div class="spinner"></div> แปล ${toTranslate.length} กรอบ...`;
+
+    // แปลทีเดียวทั้งหมด — batch เดียว
+    const texts = toTranslate.map(r => r.korean);
+    const trRes = await fetch('/api/translate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({texts, studio_prompt: getStudioSystemPrompt()})
+    });
+    const trData = await trRes.json();
+    const translations = trData.success ? trData.translations : texts;
+
+    // อัพเดต UI ทุก box
+    toTranslate.forEach(({box, korean}, i) => {
+      const thai = translations[i] || korean;
+      box.text = thai;
+      const ocrR = state.ocrResults.find(r => r.id === box.id);
+      if(ocrR) ocrR.thai = thai;
+      // force re-render element
+      const el = document.getElementById(box.id);
+      if(el) applyBoxStyle(el, box);
+      if(state.selectedBox === box.id){
+        document.getElementById('selected-korean').value = korean;
+        document.getElementById('selected-thai').value = thai;
+      }
+    });
+    // re-render all boxes เพื่อให้แน่ใจว่า DOM update ครบ
+    state.textBoxes.forEach(box => {
+      const el = document.getElementById(box.id);
+      if(el) applyBoxStyle(el, box);
+    });
+
+    renderBalloonList();
+    toast(`✅ OCR + แปลเสร็จ ${toTranslate.length} กรอบครับ`, 'success');
+    setStep('translate', 'done');
+
+  } catch(e){
+    toast('❌ OCR + แปล ล้มเหลว: ' + e.message, 'error');
+  } finally{
+    btn.innerHTML = origHTML;
+    btn.disabled = false;
+    setProcessing(false);
+    enableTranslateBtn();
+  }
+}
+
+async function runTranslate(){
+  if(!validate()) return;
+
+  // รวบรวม box ทุกอันที่มีข้อความเกาหลี
+  const boxesWithKorean = state.textBoxes.filter(b => b.korean && b.korean.length > 0 && !b.korean.startsWith('⏳') && !b.korean.startsWith('❌'));
+
+  if(!boxesWithKorean.length){
+    toast('กรุณาวาดกรอบและรอให้ OCR เสร็จก่อนครับ','error');
+    return;
+  }
+
+  setProcessing(true); setStep('translate','active');
+  try{
+    const koreanTexts = boxesWithKorean.map(b => b.korean);
+    toast('🌐 กำลังแปล...','success');
+    const translations = await apiTranslate(koreanTexts);
+
+    // แทนที่ข้อความในแต่ละ Box
+    boxesWithKorean.forEach((box, i) => {
+      if(i < translations.length){
+        box.text = translations[i];
+        const el = document.getElementById(box.id);
+        if(el) applyBoxStyle(el, box);
+        // อัพเดต ocrResults
+        const r = state.ocrResults.find(r => r.id === box.id);
+        if(r) r.thai = translations[i];
+      }
+    });
+    // re-render all boxes เพื่อให้แน่ใจ
+    state.textBoxes.forEach(box => {
+      const el = document.getElementById(box.id);
+      if(el) applyBoxStyle(el, box);
+    });
+
+    document.getElementById('translated-text').value = translations.join('\n---\n');
+    document.getElementById('source-text').value = koreanTexts.join('\n---\n');
+    setStep('translate','done');
+    renderBalloonList();
+    toast(`🌐 แปล ${translations.length} กรอบสำเร็จ!`,'success');
+  }catch(e){
+    setStep('translate','idle');
+    toast('❌ แปลล้มเหลว: '+e.message,'error');
+  }finally{setProcessing(false);}
+}
+
+function placeBoxesAuto(){
+  if(!state.ocrResults.length){toast('กรุณา Detect ก่อนครับ','error');return;}
+  clearAllBoxes();
+  const img=document.getElementById('base-img');
+  const W=img.naturalWidth, H=img.naturalHeight;
+  const count=state.ocrResults.length;
+  state.ocrResults.forEach((r,i)=>{
+    const boxH=Math.max(60,Math.floor(H/(count+1)));
+    const y=Math.floor((H/(count+1))*(i+0.5));
+    createTextBox({x:Math.floor(W*0.1),y:Math.max(5,y-boxH/2),
+      w:Math.floor(W*0.8),h:boxH,text:r.thai||r.korean,korean:r.korean});
+  });
+  setStep('box','done'); enableExport(); renderBalloonList();
+  toast(`📝 วาง ${count} Box สำเร็จ`,'success');
+}
+
+function parseResults(korean,thai){
+  const kLines=korean.split('---').map(s=>s.trim()).filter(Boolean);
+  const tLines=thai.split('---').map(s=>s.trim()).filter(Boolean);
+  state.ocrResults=kLines.map((k,i)=>({korean:k,thai:tLines[i]||'—'}));
+  document.getElementById('btn-place-boxes').disabled=false;
+  renderBalloonList();
+}
+
+function renderBalloonList(){
+  if(!state.textBoxes.length && !state.ocrResults.length) return;
+  const section=document.getElementById('balloon-section');
+  const list=document.getElementById('balloon-list');
+  section.style.display='block'; list.innerHTML='';
+  state.textBoxes.forEach((box,i)=>{
+    const div=document.createElement('div'); div.className='balloon-item';
+    div.style.cursor='pointer';
+    div.onclick=()=>selectBox(box.id);
+    div.innerHTML=`<div class="kr">🇰🇷 ${(box.korean||'').substring(0,40)}${(box.korean||'').length>40?'...':''}</div><div class="th">🇹🇭 ${box.text||'—'}</div>`;
+    list.appendChild(div);
+  });
+  // อัพเดต All Boxes Panel ด้วย
+  renderAllBoxesPanel();
+}
+
+// ========== EXPORT ==========
+async function exportPSD(){
+  if(!validate()) return;
+  const btn = document.getElementById('btn-export-psd');
+  const origHTML = btn.innerHTML;
+  btn.innerHTML = '<div class="spinner"></div> กำลังสร้าง PSD...';
+  btn.disabled = true;
+  toast('🎨 กำลังสร้างไฟล์ PSD...', 'success');
+
+  try{
+    const img = document.getElementById('base-img');
+    // รูปปัจจุบัน (อาจผ่าน inpaint แล้ว)
+    const canvasCurrent = document.createElement('canvas');
+    canvasCurrent.width = img.naturalWidth;
+    canvasCurrent.height = img.naturalHeight;
+    canvasCurrent.getContext('2d').drawImage(img, 0, 0);
+    const inpaintedB64 = canvasCurrent.toDataURL('image/png').split(',')[1];
+
+    // รูปต้นฉบับ (เก็บไว้ใน state.pages)
+    const origDataUrl = state.pages[state.currentIndex]?.originalDataUrl || state.pages[state.currentIndex]?.dataUrl;
+    const origB64 = origDataUrl.split(',')[1];
+
+    // Text boxes data — ส่งคำแปลไทย + ข้อมูลครบถ้วน
+    const imgEl = document.getElementById('base-img');
+    const dispW = imgEl.getBoundingClientRect().width;
+    const dispH = imgEl.getBoundingClientRect().height;
+    const natW  = imgEl.naturalWidth;
+    const natH  = imgEl.naturalHeight;
+    const imgScale = natW / dispW;
+
+    const textBoxesData = state.textBoxes.map(box => {
+      const ocrResult = state.ocrResults.find(r => r.id === box.id);
+      // Priority: box.text → ocrResult.thai → ''
+      const thaiText = box.text || ocrResult?.thai || '';
+
+      return {
+        // x/y/w/h เป็น natural image pixels อยู่แล้ว (canvas coordinates)
+        x: Math.round(box.x),
+        y: Math.round(box.y),
+        w: Math.round(box.w),
+        h: Math.round(box.h),
+        text: thaiText,
+        // font size: user ตั้งตรงๆ ไม่ต้อง scale — ส่งตรงๆ ให้ Photoshop
+        size: box.size || 14,
+        font: box.font || 'Arial',
+        color: box.color || '#000000',
+        bgColor: box.bgColor || '#ffffff',
+        bgOpacity: box.bgOpacity || 0,
+        // strokeWidth: CSS px บนจอ → natural px (ต้อง × imgScale)
+        // strokeWidth: ส่งค่า CSS px ตรงๆ ไม่ต้อง × imgScale
+        strokeWidth: box.strokeWidth || 0,
+        strokeColor: box.strokeColor || '#ffffff',
+        lineHeight: box.lineHeight || 1.4,
+        imgScale: parseFloat(imgScale.toFixed(4))
+      };
+    });
+
+    const res = await fetch('/api/export_psd', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        original: origB64,
+        inpainted: inpaintedB64,
+        text_boxes: textBoxesData,
+        page_name: state.pages[state.currentIndex]?.name || `page_${state.currentIndex+1}`
+      })
+    });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error);
+
+    // Download PSD
+    const mimeType = data.format === 'zip' ? 'application/zip' : 'application/octet-stream';
+    const a = document.createElement('a');
+    a.href = `data:${mimeType};base64,${data.psd}`;
+    a.download = data.filename || `comics_page_${state.currentIndex+1}.psd`;
+    a.click();
+
+    if(data.format === 'zip'){
+      toast(`🎨 Export สำเร็จ! ได้ ZIP ที่มี ${data.message||'layers แยกกัน'} ครับ`, 'success');
+    } else {
+      toast('🎨 Export PSD สำเร็จครับ!', 'success');
+    }
+
+  } catch(e){
+    toast('❌ Export PSD ล้มเหลว: '+e.message, 'error');
+  } finally {
+    btn.innerHTML = origHTML;
+    btn.disabled = false;
+  }
+}
+
+function exportFinal(){
+  const img=document.getElementById('base-img');
+  const canvas=document.createElement('canvas');
+  canvas.width=img.naturalWidth; canvas.height=img.naturalHeight;
+  const ctx=canvas.getContext('2d');
+
+  // ซ่อน HTML Text Box elements ทั้งหมดก่อน
+  const boxEls = document.querySelectorAll('.text-box-el');
+  boxEls.forEach(el => el.style.visibility = 'hidden');
+
+  // วาดรูปพื้นหลัง (base-img ล้วนๆ ไม่มี HTML elements)
+  ctx.drawImage(img, 0, 0);
+
+  // วาด text boxes ลงบน canvas โดยตรง (ไม่มีกรอบ HTML)
+  state.textBoxes.forEach(box=>{
+    const r=parseInt(box.bgColor.slice(1,3),16);
+    const g=parseInt(box.bgColor.slice(3,5),16);
+    const b=parseInt(box.bgColor.slice(5,7),16);
+
+    // วาดพื้นหลัง box
+    ctx.fillStyle=`rgba(${r},${g},${b},${box.bgOpacity/100})`;
+    ctx.fillRect(box.x, box.y, box.w, box.h);
+
+    // ตั้งค่าฟอนต์
+    ctx.font=`${box.size}px '${box.font}',sans-serif`;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+
+    // Word wrap — รองรับ newline (\n) จากการพิมพ์ Enter
+    const paragraphs = box.text.split('\n');
+    const lines = [];
+    const maxW = box.w - box.size*2;
+
+    paragraphs.forEach(para => {
+      if(para === ''){
+        lines.push(''); // บรรทัดว่าง
+        return;
+      }
+      let line = '';
+      for(let ch of para){
+        const test = line + ch;
+        if(ctx.measureText(test).width > maxW && line){
+          lines.push(line); line = ch;
+        } else {
+          line = test;
+        }
+      }
+      if(line) lines.push(line);
+    });
+
+    // Line height
+    const lh = box.lineHeight || 1.4;
+    const lineH = box.size * lh;
+    const totalH = lines.length * lineH;
+
+    lines.forEach((l,i)=>{
+      const tx = box.x + box.w/2;
+      const ty = box.y + box.h/2 - totalH/2 + i*lineH + lineH/2;
+
+      // วาด Stroke ก่อน (ถ้ามี)
+      const sw = box.strokeWidth || 0;
+      if(sw > 0){
+        ctx.lineWidth = sw * 2;
+        ctx.strokeStyle = box.strokeColor || '#ffffff';
+        ctx.lineJoin = 'round';
+        ctx.strokeText(l, tx, ty);
+      }
+
+      // วาดข้อความ
+      ctx.fillStyle = box.color;
+      ctx.fillText(l, tx, ty);
+    });
+  });
+
+  // Download
+  const a=document.createElement('a');
+  a.download=`translated_page_${state.currentIndex+1}.png`;
+  a.href=canvas.toDataURL('image/png');
+  a.click();
+
+  // แสดง HTML Text Box elements กลับมา
+  boxEls.forEach(el => el.style.visibility = 'visible');
+
+  toast('💾 Export รูปสำเร็จครับ!','success');
+}
+
+function exportClean(){
+  const img=document.getElementById('base-img');
+  const canvas=document.createElement('canvas');
+  canvas.width=img.naturalWidth; canvas.height=img.naturalHeight;
+  canvas.getContext('2d').drawImage(img,0,0);
+  const a=document.createElement('a');
+  a.download=`original_page_${state.currentIndex+1}.png`;
+  a.href=canvas.toDataURL('image/png'); a.click();
+  toast('💾 บันทึกรูปต้นฉบับสำเร็จ','success');
+}
+
+function exportText(){
+  const src=document.getElementById('source-text').value;
+  const tr=document.getElementById('translated-text').value;
+  let content=`Comics Magic Translator\nวันที่: ${new Date().toLocaleString('th-TH')}\nหน้า: ${state.currentIndex+1}\n${'='.repeat(40)}\n\n[ต้นฉบับเกาหลี]\n${src}\n\n${'='.repeat(40)}\n\n[คำแปลไทย]\n${tr}`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:'text/plain;charset=utf-8'}));
+  a.download=`translation_page_${state.currentIndex+1}.txt`; a.click();
+  toast('📄 Export TXT สำเร็จ','success');
+}
+
+// ========== HELPERS ==========
+function validate(){
+  if(state.currentIndex<0){toast('กรุณาเลือกหน้าการ์ตูนก่อน','error');return false;}
+  if(state.isProcessing) return false;
+  return true;
+}
+
+function setProcessing(val){
+  state.isProcessing=val;
+  const btn=document.getElementById('btn-detect');
+  if(btn){
+    btn.disabled=val||state.currentIndex<0;
+    btn.innerHTML=val?'<div class="spinner"></div> กำลังประมวลผล...':'🔍 Auto Detect + OCR ทั้งหน้า';
+  }
+  const btnT=document.getElementById('btn-translate');
+  if(btnT && val) btnT.disabled=true;
+}
+
+function updateBtns(){
+  const has=state.currentIndex>=0;
+  const btnD=document.getElementById('btn-detect');
+  if(btnD) btnD.disabled=!has;
+  const bv5=document.getElementById('btn-detect-v5'); if(bv5) bv5.disabled=!has;
+  const bmc=document.getElementById('btn-mc-detect'); if(bmc) bmc.disabled=!has;
+  const bmpd=document.getElementById('btn-mp-detect'); if(bmpd) bmpd.disabled=!has;
+  const bmpt=document.getElementById('btn-mp-translate'); if(bmpt) bmpt.disabled=!has;
+  const bmpi=document.getElementById('btn-mp-inpaint'); if(bmpi) bmpi.disabled=!has;
+  const bmpe=document.getElementById('btn-mp-export'); if(bmpe) bmpe.disabled=!has;
+  const bmtg=document.getElementById('btn-multi-toggle'); if(bmtg) bmtg.disabled=!has;
+  if(has && multiPanelOpen) renderMultiPageList();
+  if(document.getElementById('btn-translate')) document.getElementById('btn-translate').disabled=true;
+}
+
+function enableTranslateBtn(){
+  const btn=document.getElementById('btn-translate');
+  if(!btn) return;
+  btn.disabled=false;
+  btn.style.background='var(--accent)';
+  btn.style.border='none';
+  btn.style.color='white';
+  ['btn-inpaint-anime','btn-inpaint-auto','btn-inpaint-color'].forEach(id=>{
+    const b=document.getElementById(id); if(b) b.disabled=false;
+  });
+}
+
+function enableExport(){
+  document.getElementById('btn-export-final').disabled=false;
+  document.getElementById('btn-export-txt').disabled=false;
+  document.getElementById('btn-export-clean').disabled=false;
+  document.getElementById('btn-export-psd').disabled=false;
+}
+
+function setStep(name,status){
+  const el=document.getElementById(`step-${name}`);
+  const st=document.getElementById(`ss-${name}`);
+  if(!el||!st) return;
+  el.className=`step ${status}`;
+  st.textContent={idle:'—',active:'⏳',done:'✅'}[status]||'—';
+}
+
+function resetSteps(){['upload','ocr','translate','box'].forEach(s=>setStep(s,'idle'));}
+
+function toast(msg,type='info'){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className=`toast ${type} show`;
+  setTimeout(()=>el.className='toast',3200);
+}
+</script>
+<!-- ==================== MULTI-PAGE PANEL ==================== -->
+<div id="multi-overlay" onclick="toggleMultiPanel()" style="
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);
+  z-index:7000;backdrop-filter:blur(2px);
+"></div>
+
+<div id="multi-popup" style="
+  display:none;position:fixed;
+  left:220px;top:50%;transform:translateY(-50%);
+  width:300px;max-height:80vh;
+  background:var(--surface1);border:1px solid var(--border);
+  border-radius:16px;z-index:7001;
+  box-shadow:0 24px 64px rgba(0,0,0,0.5);
+  overflow:hidden;flex-direction:column;
+">
+  <!-- Header -->
+  <div style="
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px;border-bottom:1px solid var(--border);
+    background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(16,185,129,0.1));
+    flex-shrink:0;
+  ">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:18px;">⚡</span>
+      <div>
+        <div style="font-weight:800;font-size:13px;">Multi-Page</div>
+        <div style="font-size:10px;color:var(--text-dim);">ประมวลผลทุกหน้าพร้อมกันครับ</div>
+      </div>
+    </div>
+    <button onclick="toggleMultiPanel()" style="
+      background:none;border:none;color:var(--text-dim);
+      font-size:18px;cursor:pointer;padding:2px 6px;border-radius:6px;
+    ">×</button>
+  </div>
+  <!-- Progress -->
+  <div id="mp-progress-wrap" style="display:none;padding:10px 14px 0;">
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-bottom:4px;">
+      <span id="mp-progress-label">กำลังทำงาน...</span>
+      <span id="mp-progress-count">0/0</span>
+    </div>
+    <div style="background:var(--surface2);border-radius:10px;height:4px;overflow:hidden;">
+      <div id="mp-progress-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#6366f1,#10b981);transition:width .3s;border-radius:10px;"></div>
+    </div>
+  </div>
+  <!-- Action Buttons -->
+  <div style="padding:10px 14px;display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+    <div style="display:flex;gap:6px;">
+      <button onclick="runMultiDetect()" id="btn-mp-detect" disabled style="
+        flex:1;padding:8px 4px;border:none;border-radius:8px;cursor:pointer;
+        background:linear-gradient(135deg,#0ea5e9,#059669);
+        color:white;font-size:11px;font-weight:700;
+      ">🔍 Detect ทั้งหมด</button>
+      <button onclick="runMultiTranslate()" id="btn-mp-translate" disabled style="
+        flex:1;padding:8px 4px;border:none;border-radius:8px;cursor:pointer;
+        background:linear-gradient(135deg,#6366f1,#a855f7);
+        color:white;font-size:11px;font-weight:700;
+      ">📖 แปลทั้งหมด</button>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button onclick="runMultiInpaint()" id="btn-mp-inpaint" disabled style="
+        flex:1;padding:8px 4px;border:none;border-radius:8px;cursor:pointer;
+        background:linear-gradient(135deg,#ec4899,#8b5cf6);
+        color:white;font-size:11px;font-weight:700;
+      ">✦ Inpaint ทั้งหมด</button>
+      <button onclick="runMultiExport()" id="btn-mp-export" disabled style="
+        flex:1;padding:8px 4px;border:none;border-radius:8px;cursor:pointer;
+        background:linear-gradient(135deg,#0ea5e9,#6366f1);
+        color:white;font-size:11px;font-weight:700;
+      ">🎨 Export ทั้งหมด</button>
+    </div>
+  </div>
+  <!-- Page List -->
+  <div class="multi-page-list" id="multi-page-list" style="padding:0 8px 8px;flex:1;overflow-y:auto;">
+    <div style="text-align:center;padding:20px;color:var(--text-dim);font-size:11px;">
+      อัพโหลดรูปก่อนครับ
+    </div>
+  </div>
+  <!-- Cancel -->
+  <div style="padding:0 10px 10px;flex-shrink:0;">
+    <button onclick="cancelMulti()" id="btn-mp-cancel" style="
+      display:none;width:100%;padding:6px;border-radius:7px;
+      background:none;border:1px solid #ef4444;color:#ef4444;
+      font-size:11px;cursor:pointer;
+    ">✕ ยกเลิก</button>
+  </div>
+</div>
+<!-- ==================== END MULTI-PAGE ==================== -->
+
+<!-- ==================== TRANSLATION STUDIO ==================== -->
+<div id="studio-overlay" onclick="closeStudio()" style="
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);
+  z-index:8000;backdrop-filter:blur(2px);
+"></div>
+
+<div id="studio-panel" style="
+  display:none;position:fixed;
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  width:560px;max-height:85vh;
+  background:var(--surface1);border:1px solid var(--border);
+  border-radius:16px;z-index:8001;
+  box-shadow:0 24px 64px rgba(0,0,0,0.5);
+  overflow:hidden;flex-direction:column;
+">
+  <!-- Header -->
+  <div style="
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 20px;border-bottom:1px solid var(--border);
+    background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(168,85,247,0.1));
+    flex-shrink:0;
+  ">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:22px;">📜</span>
+      <div>
+        <div style="font-weight:800;font-size:15px;">Translation Studio</div>
+        <div style="font-size:10px;color:var(--text-dim);">ปรับแต่งการแปลของ Gemini ครับ</div>
+      </div>
+    </div>
+    <button onclick="closeStudio()" style="
+      background:none;border:none;color:var(--text-dim);
+      font-size:20px;cursor:pointer;padding:4px 8px;
+      border-radius:6px;transition:all .2s;
+    " onmouseover="this.style.background='var(--surface2)'"
+       onmouseout="this.style.background='none'">×</button>
+  </div>
+
+  <!-- Body -->
+  <div style="overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;">
+
+    <!-- Section 1: Context Prompt -->
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <label style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;">
+          <span>💬</span> Context Prompt
+        </label>
+        <span style="font-size:10px;color:var(--text-dim);">บอก Gemini ว่าเนื้อหานี้คืออะไร</span>
+      </div>
+      <textarea id="studio-prompt" rows="4" placeholder="เช่น: มังฮวาแนว GL ตัวละครหลักชื่อ ซารา และ มิน ใช้ภาษาสุภาพอ่อนหวาน แปลชื่อตัวละครทับศัพท์ภาษาเกาหลี..." style="
+        width:100%;box-sizing:border-box;
+        background:var(--surface2);border:1px solid var(--border);
+        border-radius:8px;padding:10px 12px;
+        color:var(--text);font-size:12px;line-height:1.6;
+        resize:vertical;outline:none;font-family:inherit;
+        transition:border-color .2s;
+      " onfocus="this.style.borderColor='var(--accent)'"
+         onblur="this.style.borderColor='var(--border)'"
+         oninput="saveStudio()"></textarea>
+    </div>
+
+    <!-- Section 2: Style Preset -->
+    <div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+        <span>🎭</span> Translation Mode
+        <span style="font-size:10px;color:var(--text-dim);font-weight:400;">เลือกโหมดให้ Gemini รู้จักสไตล์</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+        <button onclick="applyStudioMode('gl')"      class="preset-btn" data-preset="gl"      style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;transition:all .2s;">🌸 GL</button>
+        <button onclick="applyStudioMode('bl')"      class="preset-btn" data-preset="bl"      style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;transition:all .2s;">💙 BL</button>
+        <button onclick="applyStudioMode('action')"  class="preset-btn" data-preset="action"  style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;transition:all .2s;">⚔️ Action</button>
+        <button onclick="applyStudioMode('romance')" class="preset-btn" data-preset="romance" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;transition:all .2s;">💕 Romance</button>
+        <button onclick="applyStudioMode('comedy')"  class="preset-btn" data-preset="comedy"  style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;transition:all .2s;">😂 Comedy</button>
+        <button onclick="applyStudioMode('fantasy')" class="preset-btn" data-preset="fantasy" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;transition:all .2s;">🔮 Fantasy</button>
+        <button onclick="applyStudioMode('formal')"  class="preset-btn" data-preset="formal"  style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;transition:all .2s;">📋 ทางการ</button>
+        <button onclick="applyStudioMode('custom')"  class="preset-btn" data-preset="custom"  style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;transition:all .2s;">✏️ Custom</button>
+      </div>
+      <!-- Mode indicator -->
+      <div id="studio-mode-indicator" style="
+        display:none;padding:6px 12px;border-radius:8px;
+        background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);
+        font-size:11px;color:var(--accent);
+      "></div>
+    </div>
+
+    <!-- Section 3: Glossary -->
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;">
+          <span>📖</span> Glossary
+          <span style="font-size:10px;color:var(--text-dim);font-weight:400;">คำศัพท์เฉพาะที่ต้องการแปลคงที่</span>
+        </div>
+        <button onclick="addGlossaryRow()" style="
+          padding:4px 10px;border-radius:6px;
+          background:var(--accent);border:none;
+          color:white;font-size:11px;cursor:pointer;
+        ">+ เพิ่ม</button>
+      </div>
+      <div id="glossary-list" style="display:flex;flex-direction:column;gap:6px;">
+        <!-- rows จะถูกสร้างโดย JS -->
+      </div>
+    </div>
+
+    <!-- Footer actions -->
+    <div style="display:flex;gap:8px;padding-top:4px;border-top:1px solid var(--border);">
+      <button onclick="clearStudio()" style="
+        flex:1;padding:8px;border-radius:8px;
+        background:none;border:1px solid var(--border);
+        color:var(--text-dim);font-size:12px;cursor:pointer;
+      ">🗑️ ล้างทั้งหมด</button>
+      <button onclick="closeStudio()" style="
+        flex:2;padding:8px;border-radius:8px;
+        background:var(--accent);border:none;
+        color:white;font-size:12px;font-weight:700;cursor:pointer;
+      ">✅ บันทึกและปิด</button>
+    </div>
+
+  </div>
+</div>
+<!-- ==================== END STUDIO ==================== -->
+
+</body>
+</html>
